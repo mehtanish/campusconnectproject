@@ -20,17 +20,24 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
     /** All complaints for a given status */
     List<Complaint> findByStatusOrderByPriorityScoreDesc(ComplaintStatus status);
 
-    /** Admin domain-filtered: get complaints for categories with matching admin role */
-    @Query("SELECT c FROM Complaint c WHERE c.category.adminRole = :role ORDER BY c.priorityScore DESC")
+    /** Admin domain-filtered: get complaints where leaf category or any ancestor category has matching admin role */
+    @Query("SELECT c FROM Complaint c WHERE " +
+           "c.category.adminRole = :role OR " +
+           "(c.category.parent IS NOT NULL AND c.category.parent.adminRole = :role) OR " +
+           "(c.category.parent.parent IS NOT NULL AND c.category.parent.parent.adminRole = :role) OR " +
+           "(c.category.parent.parent.parent IS NOT NULL AND c.category.parent.parent.parent.adminRole = :role) OR " +
+           "(c.category.parent.parent.parent.parent IS NOT NULL AND c.category.parent.parent.parent.parent.adminRole = :role) " +
+           "ORDER BY c.priorityScore DESC")
     List<Complaint> findByAdminRoleOrderByPriorityDesc(@Param("role") Role role);
 
-    /** Deduplication check: find active complaints matching location and issue tag */
-    @Query("SELECT c FROM Complaint c WHERE c.locationPath = :locationPath " +
-           "AND c.issueTag = :issueTag " +
+
+
+
+    /** Deduplication check: find active complaints matching 4-level location path */
+    @Query("SELECT c FROM Complaint c WHERE LOWER(c.locationPath) = LOWER(:locationPath) " +
            "AND c.status IN :statuses")
     List<Complaint> findDuplicates(
         @Param("locationPath") String locationPath,
-        @Param("issueTag") String issueTag,
         @Param("statuses") List<ComplaintStatus> statuses
     );
 

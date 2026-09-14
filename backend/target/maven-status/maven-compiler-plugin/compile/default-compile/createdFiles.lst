@@ -2,6 +2,7 @@ com\campuspulse\repository\ComplaintRepository.class
 com\campuspulse\dto\complaint\ComplaintResponse$ComplaintResponseBuilder.class
 com\campuspulse\repository\UserRepository.class
 com\campuspulse\service\ComplaintService.class
+com\campuspulse\service\UpvoteService$UpvoteResult.class
 com\campuspulse\dto\complaint\ComplaintResponse.class
 com\campuspulse\dto\lostfound\LostFoundRequest.class
 com\campuspulse\dto\complaint\DuplicateCheckRequest.class
@@ -25,11 +26,16 @@ com\campuspulse\model\Claim$ClaimBuilder.class
 com\campuspulse\model\Complaint.class
 com\campuspulse\config\WebConfig.class
 com\campuspulse\controller\AuthController.class
+com\campuspulse\model\IssueType$IssueTypeBuilder.class
 com\campuspulse\repository\UpvoteRepository.class
 com\campuspulse\dto\auth\LoginRequest.class
+com\campuspulse\dto\issuetype\IssueTypeResponse$IssueTypeResponseBuilder.class
+com\campuspulse\repository\IssueTypeRepository.class
+com\campuspulse\service\IssueTypeService.class
 com\campuspulse\dto\lostfound\ClaimResponse.class
 com\campuspulse\model\Complaint$ComplaintBuilder.class
 com\campuspulse\model\Category$CategoryBuilder.class
+com\campuspulse\controller\IssueTypeController.class
 com\campuspulse\model\enums\Role.class
 com\campuspulse\dto\lostfound\ClaimResponse$ClaimResponseBuilder.class
 com\campuspulse\service\UpvoteService.class
@@ -56,6 +62,8 @@ com\campuspulse\controller\CategoryController.class
 com\campuspulse\model\User.class
 com\campuspulse\dto\category\CategoryResponse.class
 com\campuspulse\model\Claim.class
+com\campuspulse\dto\issuetype\IssueTypeResponse.class
 com\campuspulse\controller\ComplaintController.class
 com\campuspulse\service\ClaimService.class
 com\campuspulse\model\enums\ComplaintStatus.class
+com\campuspulse\model\IssueType.class

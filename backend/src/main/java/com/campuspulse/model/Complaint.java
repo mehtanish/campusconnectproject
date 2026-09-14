@@ -28,7 +28,7 @@ public class Complaint {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -39,7 +39,7 @@ public class Complaint {
     /** Tag used for deduplication matching (e.g. "slow_speed", "no_connection") */
     private String issueTag;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 

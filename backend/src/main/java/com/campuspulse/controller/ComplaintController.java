@@ -41,6 +41,12 @@ public class ComplaintController {
         return ResponseEntity.ok(complaintService.getMyComplaints(user));
     }
 
+    @GetMapping("/upvoted")
+    public ResponseEntity<List<ComplaintResponse>> getUpvotedComplaints(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(complaintService.getUpvotedComplaints(user));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ComplaintResponse> getComplaintById(
             @PathVariable UUID id,
@@ -58,10 +64,11 @@ public class ComplaintController {
     public ResponseEntity<Map<String, Object>> upvote(
             @PathVariable UUID id,
             @AuthenticationPrincipal User user) {
-        int newCount = upvoteService.upvote(id, user);
+        UpvoteService.UpvoteResult result = upvoteService.upvote(id, user);
         return ResponseEntity.ok(Map.of(
-                "upvoteCount", newCount,
-                "isHighPriority", newCount >= 15
+                "upvoteCount",  result.upvoteCount(),
+                "priorityScore", result.priorityScore(),
+                "highPriority",  result.highPriority()
         ));
     }
 

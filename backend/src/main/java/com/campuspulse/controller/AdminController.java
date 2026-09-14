@@ -41,6 +41,7 @@ public class AdminController {
                 admin.getRole(), admin.getId()));
     }
 
+
     /** Update complaint status with admin note */
     @PatchMapping("/complaints/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(
@@ -71,10 +72,24 @@ public class AdminController {
     /** Dashboard analytics stats */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(@AuthenticationPrincipal User admin) {
-        long totalComplaints = complaintRepository.count();
-        long pendingComplaints = complaintRepository.countByStatus(ComplaintStatus.PENDING);
-        long resolvedComplaints = complaintRepository.countByStatus(ComplaintStatus.RESOLVED);
-        long inProgressComplaints = complaintRepository.countByStatus(ComplaintStatus.IN_PROGRESS);
+        long totalComplaints;
+        long pendingComplaints;
+        long resolvedComplaints;
+        long inProgressComplaints;
+
+        if (admin.getRole() == Role.SUPER_ADMIN) {
+            totalComplaints = complaintRepository.count();
+            pendingComplaints = complaintRepository.countByStatus(ComplaintStatus.PENDING);
+            resolvedComplaints = complaintRepository.countByStatus(ComplaintStatus.RESOLVED);
+            inProgressComplaints = complaintRepository.countByStatus(ComplaintStatus.IN_PROGRESS);
+        } else {
+            List<ComplaintResponse> domainComplaints = complaintService.getComplaintsByAdminRole(admin.getRole(), admin.getId());
+            totalComplaints = domainComplaints.size();
+            pendingComplaints = domainComplaints.stream().filter(c -> c.getStatus() == ComplaintStatus.PENDING).count();
+            resolvedComplaints = domainComplaints.stream().filter(c -> c.getStatus() == ComplaintStatus.RESOLVED).count();
+            inProgressComplaints = domainComplaints.stream().filter(c -> c.getStatus() == ComplaintStatus.IN_PROGRESS).count();
+        }
+
         long totalLostFound = lostFoundItemRepository.count();
 
         return ResponseEntity.ok(Map.of(
@@ -85,4 +100,5 @@ public class AdminController {
                 "totalLostFound", totalLostFound
         ));
     }
+
 }

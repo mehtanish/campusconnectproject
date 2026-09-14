@@ -25,5 +25,6 @@ public class ComplaintRequest {
     @NotBlank(message = "Location path is required")
     private String locationPath;
 
+    @NotBlank(message = "Issue type is required — select from the controlled list")
     private String issueTag;
 }
