@@ -1,0 +1,79 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Antigravity GLTF Generator"
+  },
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Cube",
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "name": "CubeMesh",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 1,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC3",
+      "min": [
+        -3,
+        -0.5,
+        -0.25
+      ],
+      "max": [
+        3,
+        0.5,
+        0.25
+      ]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5123,
+      "count": 36,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 288,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 288,
+      "byteLength": 72,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "data:application/octet-stream;base64,AABAQAAAAD8AAIA+AABAQAAAAD8AAIC+AABAQAAAAL8AAIA+AABAQAAAAL8AAIC+AABAwAAAAD8AAIC+AABAwAAAAD8AAIA+AABAwAAAAL8AAIC+AABAwAAAAL8AAIA+AABAwAAAAD8AAIC+AABAQAAAAD8AAIC+AABAwAAAAD8AAIA+AABAQAAAAD8AAIA+AABAwAAAAL8AAIA+AABAQAAAAL8AAIA+AABAwAAAAL8AAIC+AABAQAAAAL8AAIC+AABAwAAAAD8AAIA+AABAQAAAAD8AAIA+AABAwAAAAL8AAIA+AABAQAAAAL8AAIA+AABAQAAAAD8AAIC+AABAwAAAAD8AAIC+AABAQAAAAL8AAIC+AABAwAAAAL8AAIC+AAACAAEAAgADAAEABAAGAAUABgAHAAUACAAKAAkACgALAAkADAAOAA0ADgAPAA0AEAASABEAEgATABEAFAAWABUAFgAXABUA",
+      "byteLength": 360
+    }
+  ]
+}
