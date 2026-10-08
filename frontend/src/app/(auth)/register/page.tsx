@@ -22,7 +22,7 @@ export default function RegisterPage() {
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      await register({ name, email, rollNo, password, role: 'STUDENT' });
+      await register({ name, email, rollNo, password });
       toast.success('Student account created successfully!');
       router.push('/dashboard');
     } catch (err: any) {

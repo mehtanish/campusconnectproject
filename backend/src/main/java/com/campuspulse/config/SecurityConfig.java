@@ -32,7 +32,8 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/me").authenticated()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issue-types/**").permitAll()
@@ -41,6 +42,9 @@ public class SecurityConfig {
 
                 // Admin endpoints — any ADMIN_* or SUPER_ADMIN role
                 .requestMatchers("/api/admin/**").hasAnyRole(
+                    "ADMIN_WIFI", "ADMIN_MAINTENANCE", "ADMIN_MESS",
+                    "ADMIN_ACADEMIC", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/lost-found/verify/**").hasAnyRole(
                     "ADMIN_WIFI", "ADMIN_MAINTENANCE", "ADMIN_MESS",
                     "ADMIN_ACADEMIC", "SUPER_ADMIN")
 

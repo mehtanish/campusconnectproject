@@ -54,6 +54,7 @@ public class LostFoundService {
         return toResponse(item, finder.getRole() == Role.SUPER_ADMIN);
     }
 
+    @Transactional(readOnly = true)
     public List<LostFoundResponse> getAllItems(User currentUser) {
         boolean isAdmin = currentUser != null &&
                 (currentUser.getRole() == Role.SUPER_ADMIN ||
@@ -64,6 +65,7 @@ public class LostFoundService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<LostFoundResponse> getItemsByStatus(ItemStatus status, User currentUser) {
         boolean isAdmin = currentUser != null &&
                 currentUser.getRole() == Role.SUPER_ADMIN;
@@ -73,6 +75,7 @@ public class LostFoundService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public LostFoundResponse getItemById(UUID id, User currentUser) {
         LostFoundItem item = itemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
@@ -119,7 +122,6 @@ public class LostFoundService {
                 .status(item.getStatus())
                 .finderName(item.getFinder().getName())
                 .finderId(item.getFinder().getId())
-                .claimCode(item.getClaimCode())
                 .hiddenDetails(includeHiddenDetails ? item.getHiddenDetails() : null)
                 .createdAt(item.getCreatedAt())
                 .build();

@@ -33,6 +33,7 @@ public class ComplaintResponse {
     /** Derived: upvoteCount >= 15. Never stored — always computed from upvoteCount */
     private boolean highPriority;
     private boolean hasUpvoted;
+    private LocalDateTime upvotedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -64,11 +64,43 @@ export default function FileComplaintPage() {
     fetchIssueTypes();
   }, []);
 
-  // Reactive dedup check: fires automatically whenever locationPath changes (upon selecting the 4 levels).
+  // Recheck when either the location or selected issue type changes.
   useEffect(() => {
-    if (!locationPath) return;
-    triggerDedupCheck(locationPath);
-  }, [locationPath]);
+    if (!locationPath || !issueTag) return;
+
+    let cancelled = false;
+    const checkForDuplicate = async () => {
+      try {
+        setIsCheckingDedup(true);
+        const res = await api.post<DuplicateCheckResponse>('/api/complaints/check-duplicate', {
+          locationPath,
+          issueTag,
+        });
+
+        if (cancelled) return;
+        if (res.data.isDuplicate && res.data.existingComplaint) {
+          setDuplicateMatch(res.data.existingComplaint);
+          setIsModalOpen(true);
+          toast.warning(
+            'This issue has already been reported here. Review or upvote the existing complaint.',
+            { duration: 6000 }
+          );
+        } else {
+          setDuplicateMatch(null);
+          setIsModalOpen(false);
+        }
+      } catch (err) {
+        if (!cancelled) console.error('Failed dedup check:', err);
+      } finally {
+        if (!cancelled) setIsCheckingDedup(false);
+      }
+    };
+
+    void checkForDuplicate();
+    return () => {
+      cancelled = true;
+    };
+  }, [locationPath, issueTag]);
 
   if (isAuthLoading || !isAuthenticated || isAdmin) {
     return (
@@ -88,42 +120,19 @@ export default function FileComplaintPage() {
     );
   }
 
-  // Trigger deduplication check when 4-level locationPath is set.
-  const triggerDedupCheck = async (locPath: string) => {
-    if (!locPath) return;
-
-    try {
-      setIsCheckingDedup(true);
-      const res = await api.post<DuplicateCheckResponse>('/api/complaints/check-duplicate', {
-        locationPath: locPath,
-      });
-
-      if (res.data.isDuplicate && res.data.existingComplaint) {
-        setDuplicateMatch(res.data.existingComplaint);
-        setIsModalOpen(true);
-        toast.warning(
-          'Active complaint already registered at this location! Please upvote the existing complaint.',
-          { duration: 6000 }
-        );
-      } else {
-        setDuplicateMatch(null);
-        setIsModalOpen(false);
-      }
-    } catch (err) {
-      console.error('Failed dedup check:', err);
-    } finally {
-      setIsCheckingDedup(false);
-    }
-  };
-
   const handleCategorySelect = (category: Category, path: string) => {
+    setDuplicateMatch(null);
+    setIsModalOpen(false);
+    setIsCheckingDedup(false);
     setSelectedCategory(category);
     setLocationPath(path);
-    triggerDedupCheck(path);
   };
 
   const handleTagChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
+    setDuplicateMatch(null);
+    setIsModalOpen(false);
+    setIsCheckingDedup(false);
     setIssueTag(val);
   };
 
@@ -161,12 +170,14 @@ export default function FileComplaintPage() {
       toast.success('Complaint submitted successfully! Domain admin notified.');
       router.push('/dashboard');
     } catch (err: any) {
-      const errMsg = err.response?.data?.error || 'Failed to submit complaint';
-      toast.error(errMsg, { duration: 6000 });
-      if (locationPath) {
-        // Automatically fetch and show the existing complaint modal & upvote button
-        await triggerDedupCheck(locationPath);
+      const existingComplaint = err.response?.data?.existingComplaint as ComplaintResponse | undefined;
+      if (existingComplaint) {
+        setDuplicateMatch(existingComplaint);
         setIsModalOpen(true);
+        toast.warning('This issue was just reported. You can review or upvote the existing complaint.');
+      } else {
+        const errMsg = err.response?.data?.error || 'Failed to submit complaint';
+        toast.error(errMsg, { duration: 6000 });
       }
     } finally {
       setIsSubmitting(false);

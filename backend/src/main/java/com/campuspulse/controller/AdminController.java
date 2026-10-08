@@ -1,6 +1,7 @@
 package com.campuspulse.controller;
 
 import com.campuspulse.dto.complaint.ComplaintResponse;
+import com.campuspulse.dto.complaint.AdminComplaintDetailResponse;
 import com.campuspulse.dto.complaint.StatusUpdateRequest;
 import com.campuspulse.dto.lostfound.ClaimResponse;
 import com.campuspulse.model.User;
@@ -39,6 +40,13 @@ public class AdminController {
         }
         return ResponseEntity.ok(complaintService.getComplaintsByAdminRole(
                 admin.getRole(), admin.getId()));
+    }
+
+    @GetMapping("/complaints/{id}")
+    public ResponseEntity<AdminComplaintDetailResponse> getAdminComplaintDetails(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User admin) {
+        return ResponseEntity.ok(complaintService.getAdminComplaintDetails(id, admin.getRole()));
     }
 
 

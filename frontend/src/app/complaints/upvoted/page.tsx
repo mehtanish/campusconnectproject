@@ -206,6 +206,15 @@ export default function UpvotedComplaintsPage() {
                         <span className="text-[10px] text-[var(--text-muted)]">
                           Filed by {item.studentName}
                         </span>
+                        <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                          ID: {item.id}
+                        </span>
+                        <time
+                          className="text-[10px] text-[var(--text-muted)]"
+                          dateTime={item.upvotedAt || item.createdAt}
+                        >
+                          Upvoted {new Date(item.upvotedAt || item.createdAt).toLocaleString()}
+                        </time>
                       </div>
 
                       <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">

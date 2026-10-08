@@ -24,7 +24,6 @@ public class LostFoundResponse {
     private ItemStatus status;
     private String finderName;
     private UUID finderId;
-    private String claimCode;
     private LocalDateTime createdAt;
 
     /** Only populated for admins */

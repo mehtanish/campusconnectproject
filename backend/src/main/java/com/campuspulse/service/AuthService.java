@@ -10,6 +10,9 @@ import com.campuspulse.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -20,29 +23,24 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
 
     @SuppressWarnings("null")
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        String rollNo = request.getRollNo().trim();
+
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already registered");
         }
-        if (userRepository.existsByRollNo(request.getRollNo())) {
+        if (userRepository.existsByRollNo(rollNo)) {
             throw new RuntimeException("Roll number already registered");
-        }
-
-        Role role = Role.STUDENT;
-        if (request.getRole() != null && !request.getRole().isBlank()) {
-            try {
-                role = Role.valueOf(request.getRole().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid role: " + request.getRole());
-            }
         }
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail().toLowerCase())
-                .rollNo(request.getRollNo())
+                .email(email)
+                .rollNo(rollNo)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(role)
+                .role(Role.STUDENT)
                 .build();
 
         user = userRepository.save(user);
@@ -60,7 +58,8 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+        String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {

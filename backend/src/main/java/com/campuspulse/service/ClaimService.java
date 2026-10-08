@@ -100,6 +100,7 @@ public class ClaimService {
         return toResponse(claim);
     }
 
+    @Transactional(readOnly = true)
     public List<ClaimResponse> getPendingClaims() {
         return claimRepository.findByStatusOrderByCreatedAtDesc(ClaimStatus.PENDING)
                 .stream()
@@ -107,6 +108,7 @@ public class ClaimService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ClaimResponse> getClaimsByItem(UUID itemId) {
         return claimRepository.findByItemId(itemId)
                 .stream()
@@ -114,6 +116,7 @@ public class ClaimService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ClaimResponse> getMyClaims(User claimant) {
         return claimRepository.findByClaimantIdOrderByCreatedAtDesc(claimant.getId())
                 .stream()

@@ -11,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -56,20 +55,23 @@ public class ComplaintController {
 
     @PostMapping("/check-duplicate")
     public ResponseEntity<DuplicateCheckResponse> checkDuplicate(
-            @RequestBody DuplicateCheckRequest request) {
-        return ResponseEntity.ok(complaintService.checkDuplicate(request));
+            @RequestBody DuplicateCheckRequest request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(complaintService.checkDuplicate(request, user.getId()));
     }
 
     @PostMapping("/{id}/upvote")
-    public ResponseEntity<Map<String, Object>> upvote(
+    public ResponseEntity<UpvoteResponse> upvote(
             @PathVariable UUID id,
             @AuthenticationPrincipal User user) {
-        UpvoteService.UpvoteResult result = upvoteService.upvote(id, user);
-        return ResponseEntity.ok(Map.of(
-                "upvoteCount",  result.upvoteCount(),
-                "priorityScore", result.priorityScore(),
-                "highPriority",  result.highPriority()
-        ));
+        return ResponseEntity.ok(upvoteService.upvote(id, user));
+    }
+
+    @DeleteMapping("/{id}/upvote")
+    public ResponseEntity<UpvoteResponse> removeUpvote(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(upvoteService.removeUpvote(id, user));
     }
 
     @PatchMapping("/{id}/status")
