@@ -1,6 +1,7 @@
 package com.campuspulse.controller;
 
 import com.campuspulse.dto.complaint.ComplaintResponse;
+import com.campuspulse.dto.complaint.AdminComplaintDetailResponse;
 import com.campuspulse.dto.complaint.StatusUpdateRequest;
 import com.campuspulse.model.User;
 import com.campuspulse.model.enums.ComplaintStatus;
@@ -36,6 +37,12 @@ public class AdminController {
                 admin.getRole(), admin.getId()));
     }
 
+    @GetMapping("/complaints/{id}")
+    public ResponseEntity<AdminComplaintDetailResponse> getAdminComplaintDetails(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User admin) {
+        return ResponseEntity.ok(complaintService.getAdminComplaintDetails(id, admin.getRole()));
+    }
     /** Update complaint status with admin note */
     @PatchMapping("/complaints/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(

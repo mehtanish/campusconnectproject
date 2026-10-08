@@ -1,8 +1,10 @@
 package com.campuspulse.service;
 
 import com.campuspulse.dto.complaint.*;
+import com.campuspulse.exception.DuplicateComplaintException;
 import com.campuspulse.model.Category;
 import com.campuspulse.model.Complaint;
+import com.campuspulse.model.Upvote;
 import com.campuspulse.model.User;
 import com.campuspulse.model.enums.ComplaintStatus;
 import com.campuspulse.model.enums.Role;
@@ -11,10 +13,10 @@ import com.campuspulse.repository.ComplaintRepository;
 import com.campuspulse.repository.IssueTypeRepository;
 import com.campuspulse.repository.UpvoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,18 +33,21 @@ public class ComplaintService {
     private final IssueTypeService issueTypeService;
 
     private static final double BASE_URGENCY = 1.0;
+    private static final List<ComplaintStatus> ACTIVE_STATUSES = List.of(
+            ComplaintStatus.PENDING, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
 
     @Transactional
     public ComplaintResponse createComplaint(ComplaintRequest request, User student) {
         // Validate issueTag against the controlled vocabulary before anything else
         issueTypeService.validateStableKey(request.getIssueTag());
+        issueTypeRepository.findByStableKeyForUpdate(request.getIssueTag())
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Unknown issueTag: '" + request.getIssueTag() + "'"));
 
-        // Deduplication guard: block duplicate registration for active status at this 4-level location path
-        List<ComplaintStatus> activeStatuses = Arrays.asList(
-                ComplaintStatus.PENDING, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
-        List<Complaint> duplicates = complaintRepository.findDuplicates(request.getLocationPath(), activeStatuses);
+        List<Complaint> duplicates = complaintRepository.findDuplicates(
+                request.getLocationPath(), request.getIssueTag(), ACTIVE_STATUSES);
         if (!duplicates.isEmpty()) {
-            throw new RuntimeException("A complaint for this location path is already registered. Please upvote the existing complaint instead!");
+            throw new DuplicateComplaintException(toResponse(duplicates.get(0), student.getId()));
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -64,21 +69,20 @@ public class ComplaintService {
         return toResponse(complaint, student.getId());
     }
 
-    public DuplicateCheckResponse checkDuplicate(DuplicateCheckRequest request) {
-        if (request.getLocationPath() == null || request.getLocationPath().isBlank()) {
+    public DuplicateCheckResponse checkDuplicate(DuplicateCheckRequest request, UUID currentUserId) {
+        if (request.getLocationPath() == null || request.getLocationPath().isBlank()
+                || request.getIssueTag() == null || request.getIssueTag().isBlank()) {
             return DuplicateCheckResponse.builder().isDuplicate(false).build();
         }
 
-        List<ComplaintStatus> activeStatuses = Arrays.asList(
-                ComplaintStatus.PENDING, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
-
-        List<Complaint> duplicates = complaintRepository.findDuplicates(request.getLocationPath(), activeStatuses);
+        List<Complaint> duplicates = complaintRepository.findDuplicates(
+                request.getLocationPath(), request.getIssueTag(), ACTIVE_STATUSES);
 
         if (!duplicates.isEmpty()) {
             Complaint existing = duplicates.get(0);
             return DuplicateCheckResponse.builder()
                     .isDuplicate(true)
-                    .existingComplaint(toResponse(existing, null))
+                    .existingComplaint(toResponse(existing, currentUserId))
                     .build();
         }
 
@@ -95,9 +99,10 @@ public class ComplaintService {
     }
 
     public List<ComplaintResponse> getUpvotedComplaints(User student) {
-        return upvoteRepository.findUpvotedComplaintsByStudentId(student.getId())
+        return upvoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId())
                 .stream()
-                .map(c -> toResponse(c, student.getId()))
+                .map(upvote -> toResponse(
+                        upvote.getComplaint(), student.getId(), true, upvote.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -135,19 +140,39 @@ public class ComplaintService {
         return toResponse(complaint, currentUserId);
     }
 
-    /**
-     * Recalculate priority: upvotes × 1.5 + BASE_URGENCY (1.0).
-     * Must be called within the same transaction as the upvote insert.
-     */
-    @Transactional
-    public void recalculatePriority(UUID complaintId) {
-        Complaint complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+    @Transactional(readOnly = true)
+    public AdminComplaintDetailResponse getAdminComplaintDetails(UUID id, Role adminRole) {
+        if (adminRole != Role.SUPER_ADMIN && !complaintRepository.existsByIdAndAdminRole(id, adminRole)) {
+            throw new AccessDeniedException("You are not authorized to view this complaint.");
+        }
 
-        long upvoteCount = upvoteRepository.countByComplaintId(complaintId);
-        complaint.setUpvoteCount((int) upvoteCount);
-        complaint.setPriorityScore(upvoteCount * 1.5 + BASE_URGENCY);
-        complaintRepository.save(complaint);
+        Complaint complaint = complaintRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        AdminComplaintDetailResponse.Reporter reporter = new AdminComplaintDetailResponse.Reporter(
+                complaint.getStudent().getId(),
+                complaint.getStudent().getName(),
+                complaint.getStudent().getEmail());
+        List<AdminComplaintDetailResponse.Upvoter> upvoters = upvoteRepository
+                .findByComplaintIdWithStudent(id)
+                .stream()
+                .map(upvote -> new AdminComplaintDetailResponse.Upvoter(
+                        new AdminComplaintDetailResponse.Reporter(
+                                upvote.getStudent().getId(),
+                                upvote.getStudent().getName(),
+                                upvote.getStudent().getEmail()),
+                        upvote.getCreatedAt()))
+                .collect(Collectors.toList());
+
+        return new AdminComplaintDetailResponse(
+                complaint.getId(),
+                complaint.getTitle(),
+                complaint.getDescription(),
+                complaint.getStatus(),
+                complaint.getUpvoteCount(),
+                reporter,
+                upvoters,
+                complaint.getCreatedAt(),
+                complaint.getUpdatedAt());
     }
 
     /**
@@ -155,12 +180,14 @@ public class ComplaintService {
      * upvoteCount, priorityScore, and highPriority (derived: upvoteCount >= 15).
      */
     ComplaintResponse toResponse(Complaint complaint, UUID currentUserId) {
-        boolean hasUpvoted = false;
-        if (currentUserId != null) {
-            hasUpvoted = upvoteRepository.existsByComplaintIdAndStudentId(
-                    complaint.getId(), currentUserId);
-        }
+        boolean hasUpvoted = currentUserId != null && upvoteRepository.existsByComplaintIdAndStudentId(
+                complaint.getId(), currentUserId);
+        return toResponse(complaint, currentUserId, hasUpvoted, null);
+    }
 
+    private ComplaintResponse toResponse(
+            Complaint complaint, UUID currentUserId, boolean hasUpvoted,
+            java.time.LocalDateTime upvotedAt) {
         int upvoteCount = complaint.getUpvoteCount();
 
         // Resolve human-readable label for the issueTag from the controlled vocabulary
@@ -185,6 +212,7 @@ public class ComplaintService {
                 .priorityScore(complaint.getPriorityScore())
                 .highPriority(upvoteCount >= 15)   // derived — never stored
                 .hasUpvoted(hasUpvoted)
+                .upvotedAt(upvotedAt)
                 .createdAt(complaint.getCreatedAt())
                 .updatedAt(complaint.getUpdatedAt())
                 .build();

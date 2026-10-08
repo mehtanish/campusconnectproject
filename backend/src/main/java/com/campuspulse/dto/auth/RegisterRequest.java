@@ -25,7 +25,4 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
-
-    /** Defaults to STUDENT if not provided */
-    private String role;
 }

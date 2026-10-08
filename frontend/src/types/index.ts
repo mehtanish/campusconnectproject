@@ -46,7 +46,6 @@ export interface RegisterRequest {
   email: string;
   rollNo: string;
   password: string;
-  role?: string;
 }
 
 export interface AuthResponse {
@@ -115,6 +114,7 @@ export interface ComplaintResponse {
   /** Derived: upvoteCount >= 15 — computed on the server, never stored */
   highPriority: boolean;
   hasUpvoted: boolean;
+  upvotedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -135,10 +135,12 @@ export interface StatusUpdateRequest {
 }
 
 export interface UpvoteResponse {
+  success: boolean;
+  message: string;
   upvoteCount: number;
   priorityScore: number;
   /** True when upvoteCount >= 15 */
   highPriority: boolean;
+  hasUpvoted: boolean;
 }
-
 

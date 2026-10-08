@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, MapPin, Tag, ThumbsUp, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, MapPin, Tag, ThumbsUp, Sparkles, Clock, CheckCircle2, User } from 'lucide-react';
 import { UpvoteButton } from './UpvoteButton';
 import type { ComplaintResponse } from '@/types';
 
@@ -66,6 +66,16 @@ export function DuplicateBanner({
         <div className="flex items-center gap-2 text-xs text-indigo-300 font-mono pt-1">
           <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
           <span className="truncate">{existingComplaint.locationPath}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
+          <span className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-indigo-400" />
+            Filed by {existingComplaint.studentName}
+          </span>
+          <time className="flex items-center gap-1.5" dateTime={existingComplaint.createdAt}>
+            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            {new Date(existingComplaint.createdAt).toLocaleString()}
+          </time>
         </div>
       </div>
 

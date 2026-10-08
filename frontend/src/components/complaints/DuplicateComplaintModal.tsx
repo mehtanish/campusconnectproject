@@ -104,14 +104,20 @@ export function DuplicateComplaintModal({
               </p>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
               <div className="flex items-center gap-1.5 text-indigo-300 font-mono">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">{existingComplaint.locationPath}</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="flex items-center gap-1">
                 <User className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Filed by {existingComplaint.studentName}</span>
+                </span>
+                <time className="flex items-center gap-1" dateTime={existingComplaint.createdAt}>
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                  Filed {new Date(existingComplaint.createdAt).toLocaleString()}
+                </time>
               </div>
             </div>
           </div>

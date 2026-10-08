@@ -5,6 +5,7 @@ import com.campuspulse.model.enums.*;
 import com.campuspulse.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,18 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final IssueTypeRepository issueTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.seed.demo-data:true}")
+    private boolean seedDemoData;
+
+    @Value("${app.bootstrap-admin.email:}")
+    private String bootstrapAdminEmail;
+
+    @Value("${app.bootstrap-admin.roll-no:}")
+    private String bootstrapAdminRollNo;
+
+    @Value("${app.bootstrap-admin.password:}")
+    private String bootstrapAdminPassword;
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -44,35 +57,54 @@ public class DatabaseSeeder implements CommandLineRunner {
         log.info("🌱 Seeding PICT Campus Infrastructure Data...");
 
         // ========== USERS ==========
-        User student = userRepository.save(User.builder()
+        User student = null;
+        User student2 = null;
+        if (seedDemoData) {
+            student = userRepository.save(User.builder()
                 .name("Arjun Sharma").email("arjun@pict.edu").rollNo("F2510342")
                 .passwordHash(passwordEncoder.encode("password123")).role(Role.STUDENT).build());
 
-        User student2 = userRepository.save(User.builder()
+            student2 = userRepository.save(User.builder()
                 .name("Priya Patel").email("priya@pict.edu").rollNo("F2510343")
                 .passwordHash(passwordEncoder.encode("password123")).role(Role.STUDENT).build());
 
-        User wifiAdmin = userRepository.save(User.builder()
+            userRepository.save(User.builder()
                 .name("Ravi Kumar").email("wifi.admin@pict.edu").rollNo("ADMIN001")
                 .passwordHash(passwordEncoder.encode("admin123")).role(Role.ADMIN_WIFI).build());
 
-        User maintAdmin = userRepository.save(User.builder()
+            userRepository.save(User.builder()
                 .name("Sunita Devi").email("maint.admin@pict.edu").rollNo("ADMIN002")
                 .passwordHash(passwordEncoder.encode("admin123")).role(Role.ADMIN_MAINTENANCE).build());
 
-        User messAdmin = userRepository.save(User.builder()
+            userRepository.save(User.builder()
                 .name("Ahmed Khan").email("mess.admin@pict.edu").rollNo("ADMIN003")
                 .passwordHash(passwordEncoder.encode("admin123")).role(Role.ADMIN_MESS).build());
 
-        User acadAdmin = userRepository.save(User.builder()
+            userRepository.save(User.builder()
                 .name("Dr. Meera Reddy").email("acad.admin@pict.edu").rollNo("ADMIN004")
                 .passwordHash(passwordEncoder.encode("admin123")).role(Role.ADMIN_ACADEMIC).build());
 
-        User superAdmin = userRepository.save(User.builder()
+            userRepository.save(User.builder()
                 .name("PICT Admin").email("super.admin@pict.edu").rollNo("SADMIN001")
                 .passwordHash(passwordEncoder.encode("superadmin123")).role(Role.SUPER_ADMIN).build());
+            log.info("Seeded {} development users", userRepository.count());
+        } else {
+            if (bootstrapAdminEmail.isBlank() || bootstrapAdminRollNo.isBlank()
+                || bootstrapAdminPassword.isBlank()) {
+            throw new IllegalStateException(
+                "Set BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_ROLL_NO, and BOOTSTRAP_ADMIN_PASSWORD "
+                    + "when initializing an empty production database");
+            }
 
-        log.info("✅ Seeded {} users", userRepository.count());
+            userRepository.save(User.builder()
+                .name("CampusPulse Administrator")
+                .email(bootstrapAdminEmail.trim().toLowerCase(java.util.Locale.ROOT))
+                .rollNo(bootstrapAdminRollNo.trim())
+                .passwordHash(passwordEncoder.encode(bootstrapAdminPassword))
+                .role(Role.SUPER_ADMIN)
+                .build());
+            log.info("Created production bootstrap administrator");
+        }
 
         // ========== EXACT PICT CAMPUS CATEGORY HIERARCHY ==========
 
@@ -161,12 +193,13 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         log.info("✅ Seeded {} PICT campus categories", categoryRepository.count());
 
-        // ========== SAMPLE COMPLAINTS WITH PARAMETERIZED TAGS ==========
-        Category a3Floor1Washroom = categoryRepository.findAll().stream()
-                .filter(c -> c.getName().contains("Washroom") && c.getParent() != null && c.getParent().getName().contains("Floor 1"))
+        if (seedDemoData) {
+            Category a3Floor1Washroom = categoryRepository.findAll().stream()
+                .filter(c -> c.getName().contains("Washroom") && c.getParent() != null
+                    && c.getParent().getName().contains("Floor 1"))
                 .findFirst().orElse(academicBlocks);
 
-        complaintRepository.save(Complaint.builder()
+            complaintRepository.save(Complaint.builder()
                 .title("A3 Building - Floor 1 Gents Washroom Dirty & Water Supply Issue")
                 .description("The Gents washroom on Floor 1 of A3 building is dirty and water flush is not working since morning.")
                 .category(a3Floor1Washroom)
@@ -178,11 +211,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .priorityScore(14 * 1.5 + 1.0)
                 .build());
 
-        Category boysRoom105 = categoryRepository.findAll().stream()
+            Category boysRoom105 = categoryRepository.findAll().stream()
                 .filter(c -> c.getName().equals("Room 105"))
                 .findFirst().orElse(boysHostel);
 
-        complaintRepository.save(Complaint.builder()
+            complaintRepository.save(Complaint.builder()
                 .title("Boys Hostel Room 105 - WiFi Router Disconnected")
                 .description("Router in Room 105 has orange light blinking. High latency and no internet access.")
                 .category(boysRoom105)
@@ -194,11 +227,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .priorityScore(6 * 1.5 + 1.0)
                 .build());
 
-        log.info("✅ Seeded sample complaints");
-
-        // ========== CONTROLLED VOCABULARY ISSUE TYPES ==========
-        seedIssueTypes();
-        log.info("✅ Seeded {} issue types", issueTypeRepository.count());
+            log.info("✅ Seeded sample complaints");
+        }
     }
 
     private void seedIssueTypes() {

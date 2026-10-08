@@ -8,9 +8,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "upvotes", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"complaint_id", "student_id"})
-})
+@Table(name = "upvotes",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_upvotes_complaint_student",
+        columnNames = {"complaint_id", "student_id"}),
+    indexes = @Index(name = "idx_upvotes_student_id", columnList = "student_id"))
 @Getter
 @Setter
 @NoArgsConstructor

@@ -1,7 +1,7 @@
 package com.campuspulse.repository;
 
-import com.campuspulse.model.Complaint;
 import com.campuspulse.model.Upvote;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +17,12 @@ public interface UpvoteRepository extends JpaRepository<Upvote, UUID> {
 
     long countByComplaintId(UUID complaintId);
 
-    @Query("SELECT u.complaint FROM Upvote u WHERE u.student.id = :studentId ORDER BY u.createdAt DESC")
-    List<Complaint> findUpvotedComplaintsByStudentId(@Param("studentId") UUID studentId);
+    @EntityGraph(attributePaths = {"complaint", "complaint.category", "complaint.student"})
+    List<Upvote> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
+
+    @EntityGraph(attributePaths = "student")
+    @Query("SELECT u FROM Upvote u WHERE u.complaint.id = :complaintId ORDER BY u.createdAt ASC")
+    List<Upvote> findByComplaintIdWithStudent(@Param("complaintId") UUID complaintId);
+
+    java.util.Optional<Upvote> findByComplaintIdAndStudentId(UUID complaintId, UUID studentId);
 }

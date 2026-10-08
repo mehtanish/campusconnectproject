@@ -1,7 +1,9 @@
 package com.campuspulse.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +23,53 @@ public class GlobalExceptionHandler {
         body.put("error", ex.getMessage());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(DuplicateComplaintException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateComplaint(
+            DuplicateComplaintException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("duplicate", true);
+        body.put("message", ex.getMessage());
+        body.put("error", ex.getMessage());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("existingComplaint", ex.getExistingComplaint());
+        body.put("existingTicket", ex.getExistingComplaint());
+        body.put("canUpvote", true);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("success", false);
+        body.put("message", ex.getMessage());
+        body.put("error", ex.getMessage());
+        body.put("status", HttpStatus.CONFLICT.value());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataConflict(DataIntegrityViolationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("success", false);
+        body.put("message", "This request conflicts with an existing record.");
+        body.put("error", "This request conflicts with an existing record.");
+        body.put("status", HttpStatus.CONFLICT.value());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("error", "Forbidden");
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

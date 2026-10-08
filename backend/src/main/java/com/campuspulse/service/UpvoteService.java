@@ -1,11 +1,14 @@
 package com.campuspulse.service;
 
+import com.campuspulse.dto.complaint.UpvoteResponse;
+import com.campuspulse.exception.ConflictException;
 import com.campuspulse.model.Complaint;
 import com.campuspulse.model.Upvote;
 import com.campuspulse.model.User;
 import com.campuspulse.repository.ComplaintRepository;
 import com.campuspulse.repository.UpvoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,46 +21,68 @@ public class UpvoteService {
 
     private final UpvoteRepository upvoteRepository;
     private final ComplaintRepository complaintRepository;
-    private final ComplaintService complaintService;
 
-    /**
-     * Result record returned after a successful upvote, containing all three
-     * priority fields in sync — always computed together, never stale.
-     */
-    public record UpvoteResult(int upvoteCount, double priorityScore, boolean highPriority) {}
-
-    /**
-     * Records the upvote and recalculates priority in the same transaction.
-     * Throws RuntimeException (→ 409 via exception handler) if already upvoted.
-     *
-     * Returns the full priority triplet so the controller can echo it back
-     * without an additional DB read.
-     */
+    /** Adds/removes votes under a complaint-row lock; the unique key is the final safeguard. */
     @Transactional
-    public UpvoteResult upvote(UUID complaintId, User student) {
-        // Application-layer uniqueness guard (DB constraint is the second layer)
-        if (upvoteRepository.existsByComplaintIdAndStudentId(complaintId, student.getId())) {
-            throw new RuntimeException("You have already upvoted this complaint");
-        }
-
-        Complaint complaint = complaintRepository.findById(complaintId)
+    public UpvoteResponse upvote(UUID complaintId, User student) {
+        Complaint complaint = complaintRepository.findByIdForUpdate(complaintId)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        ensureEligibleForVoting(complaint);
+
+        if (upvoteRepository.existsByComplaintIdAndStudentId(complaintId, student.getId())) {
+            throw new ConflictException("You have already upvoted this issue.");
+        }
 
         Upvote upvote = Upvote.builder()
                 .complaint(complaint)
                 .student(student)
                 .build();
-        upvoteRepository.save(upvote);
+        try {
+            upvoteRepository.save(upvote);
+            upvoteRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            throw new ConflictException("You have already upvoted this issue.");
+        }
 
-        // Recalculate priority in the same transaction
-        complaintService.recalculatePriority(complaintId);
+        return updateCountAndBuildResponse(complaint, true, "Issue upvoted successfully.");
+    }
 
-        // Re-fetch the updated count (recalculatePriority writes to DB within this TX)
-        long newCount = upvoteRepository.countByComplaintId(complaintId);
-        double newScore = newCount * 1.5 + 1.0;
-        boolean highPriority = newCount >= 15;
+    @Transactional
+    public UpvoteResponse removeUpvote(UUID complaintId, User student) {
+        Complaint complaint = complaintRepository.findByIdForUpdate(complaintId)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
 
-        return new UpvoteResult((int) newCount, newScore, highPriority);
+        Upvote upvote = upvoteRepository.findByComplaintIdAndStudentId(complaintId, student.getId())
+                .orElseThrow(() -> new ConflictException("You have not upvoted this issue."));
+
+        upvoteRepository.delete(upvote);
+        upvoteRepository.flush();
+
+        return updateCountAndBuildResponse(complaint, false, "Upvote removed successfully.");
+    }
+
+    private void ensureEligibleForVoting(Complaint complaint) {
+        if (complaint.getStatus() == com.campuspulse.model.enums.ComplaintStatus.RESOLVED
+                || complaint.getStatus() == com.campuspulse.model.enums.ComplaintStatus.REJECTED) {
+            throw new ConflictException("This issue is no longer open for upvoting.");
+        }
+    }
+
+    private UpvoteResponse updateCountAndBuildResponse(
+            Complaint complaint, boolean hasUpvoted, String message) {
+        long count = upvoteRepository.countByComplaintId(complaint.getId());
+        complaint.setUpvoteCount(Math.toIntExact(count));
+        complaint.setPriorityScore(count * 1.5 + 1.0);
+        complaintRepository.save(complaint);
+
+        return UpvoteResponse.builder()
+                .success(true)
+                .message(message)
+                .upvoteCount(complaint.getUpvoteCount())
+                .priorityScore(complaint.getPriorityScore())
+                .highPriority(count >= 15)
+                .hasUpvoted(hasUpvoted)
+                .build();
     }
 
     public boolean hasUpvoted(UUID complaintId, UUID studentId) {

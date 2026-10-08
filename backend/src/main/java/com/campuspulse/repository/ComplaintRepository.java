@@ -3,7 +3,9 @@ package com.campuspulse.repository;
 import com.campuspulse.model.Complaint;
 import com.campuspulse.model.enums.ComplaintStatus;
 import com.campuspulse.model.enums.Role;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +15,10 @@ import java.util.UUID;
 
 @Repository
 public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Complaint c WHERE c.id = :id")
+    java.util.Optional<Complaint> findByIdForUpdate(@Param("id") UUID id);
 
     /** Student's own complaints */
     List<Complaint> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
@@ -30,14 +36,24 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
            "ORDER BY c.priorityScore DESC")
     List<Complaint> findByAdminRoleOrderByPriorityDesc(@Param("role") Role role);
 
+        @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM Complaint c WHERE c.id = :id AND " +
+            "(c.category.adminRole = :role OR " +
+            "(c.category.parent IS NOT NULL AND c.category.parent.adminRole = :role) OR " +
+            "(c.category.parent.parent IS NOT NULL AND c.category.parent.parent.adminRole = :role) OR " +
+            "(c.category.parent.parent.parent IS NOT NULL AND c.category.parent.parent.parent.adminRole = :role) OR " +
+            "(c.category.parent.parent.parent.parent IS NOT NULL AND c.category.parent.parent.parent.parent.adminRole = :role))")
+        boolean existsByIdAndAdminRole(@Param("id") UUID id, @Param("role") Role role);
 
 
 
-    /** Deduplication check: find active complaints matching 4-level location path */
+
+    /** Find active complaints for the same issue type at the same location. */
     @Query("SELECT c FROM Complaint c WHERE LOWER(c.locationPath) = LOWER(:locationPath) " +
-           "AND c.status IN :statuses")
+           "AND LOWER(c.issueTag) = LOWER(:issueTag) " +
+           "AND c.status IN :statuses ORDER BY c.createdAt ASC")
     List<Complaint> findDuplicates(
         @Param("locationPath") String locationPath,
+        @Param("issueTag") String issueTag,
         @Param("statuses") List<ComplaintStatus> statuses
     );
 

@@ -121,9 +121,11 @@ export default function FileComplaintPage() {
   };
 
   const handleCategorySelect = (category: Category, path: string) => {
+    setDuplicateMatch(null);
+    setIsModalOpen(false);
+    setIsCheckingDedup(false);
     setSelectedCategory(category);
     setLocationPath(path);
-    triggerDedupCheck(path);
   };
 
   const handleSubmit = async () => {
@@ -163,12 +165,15 @@ export default function FileComplaintPage() {
 
       toast.success('Complaint registered successfully! Ticket generated.');
     } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { error?: string } } };
-      const errMsg = errorObj.response?.data?.error || 'Failed to submit complaint';
-      toast.error(errMsg, { duration: 6000 });
-      if (locationPath) {
-        await triggerDedupCheck(locationPath);
+      const errorObj = err as { response?: { data?: { error?: string; existingComplaint?: ComplaintResponse } } };
+      const existingComplaint = errorObj.response?.data?.existingComplaint;
+      if (existingComplaint) {
+        setDuplicateMatch(existingComplaint);
         setIsModalOpen(true);
+        toast.warning('This issue was just reported. You can review or upvote the existing complaint.');
+      } else {
+        const errMsg = errorObj.response?.data?.error || 'Failed to submit complaint';
+        toast.error(errMsg, { duration: 6000 });
       }
     } finally {
       setIsSubmitting(false);
