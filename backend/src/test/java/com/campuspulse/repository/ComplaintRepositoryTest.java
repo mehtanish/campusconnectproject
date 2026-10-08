@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
+@SuppressWarnings("null")
 class ComplaintRepositoryTest {
 
     private static final List<ComplaintStatus> ACTIVE_STATUSES = List.of(

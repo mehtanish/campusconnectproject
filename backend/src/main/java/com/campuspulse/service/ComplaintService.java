@@ -4,7 +4,6 @@ import com.campuspulse.dto.complaint.*;
 import com.campuspulse.exception.DuplicateComplaintException;
 import com.campuspulse.model.Category;
 import com.campuspulse.model.Complaint;
-import com.campuspulse.model.Upvote;
 import com.campuspulse.model.User;
 import com.campuspulse.model.enums.ComplaintStatus;
 import com.campuspulse.model.enums.Role;

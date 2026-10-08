@@ -2,7 +2,6 @@ com\campuspulse\repository\ComplaintRepository.class
 com\campuspulse\dto\complaint\ComplaintResponse$ComplaintResponseBuilder.class
 com\campuspulse\repository\UserRepository.class
 com\campuspulse\service\ComplaintService.class
-com\campuspulse\service\UpvoteService$UpvoteResult.class
 com\campuspulse\dto\complaint\ComplaintResponse.class
 com\campuspulse\dto\complaint\DuplicateCheckRequest.class
 com\campuspulse\controller\PublicStatsController.class

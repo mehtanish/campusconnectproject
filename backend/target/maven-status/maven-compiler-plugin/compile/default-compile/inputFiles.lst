@@ -14,12 +14,16 @@ C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\auth\AuthResponse.
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\auth\LoginRequest.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\auth\RegisterRequest.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\category\CategoryResponse.java
+C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\AdminComplaintDetailResponse.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\ComplaintRequest.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\ComplaintResponse.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\DuplicateCheckRequest.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\DuplicateCheckResponse.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\StatusUpdateRequest.java
+C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\complaint\UpvoteResponse.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\dto\issuetype\IssueTypeResponse.java
+C:\campusconnectcep\backend\src\main\java\com\campuspulse\exception\ConflictException.java
+C:\campusconnectcep\backend\src\main\java\com\campuspulse\exception\DuplicateComplaintException.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\exception\GlobalExceptionHandler.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\model\Category.java
 C:\campusconnectcep\backend\src\main\java\com\campuspulse\model\Complaint.java
