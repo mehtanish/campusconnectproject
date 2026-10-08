@@ -99,18 +99,18 @@ export default function AdminLoginPage() {
           <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
             <div className="flex items-center justify-center gap-1 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
               <AlertCircle className="w-3 h-3" />
-              <span>Official Admin Account</span>
+              <span>Official Admin Credentials</span>
             </div>
-            <div className="flex justify-center text-[11px]">
+            <div className="flex flex-wrap justify-center gap-2 text-[11px]">
               <button
                 type="button"
                 onClick={() => {
-                  setEmail('super.admin@pict.edu');
-                  setPassword('superadmin123');
+                  setEmail('admin@campusconnect.edu');
+                  setPassword('YourAdminPassword123!');
                 }}
                 className="px-3 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono cursor-pointer transition-colors"
               >
-                Campus Admin (super.admin@pict.edu)
+                Production Admin (admin@campusconnect.edu)
               </button>
             </div>
           </div>
