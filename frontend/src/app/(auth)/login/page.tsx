@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { Navbar } from '@/components/layout/Navbar';
-import { Activity, Lock, Mail, ArrowRight, UserCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import { GlowCard } from '@/components/ui/GlowCard';
+import { Input } from '@/components/ui/Input';
+import { CartoonPlaneBackground } from '@/components/background/CartoonPlaneBackground';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,75 +27,77 @@ export default function LoginPage() {
       await login({ email, password });
       toast.success('Logged in successfully!');
       router.push('/dashboard');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Login failed');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      toast.error(errorObj.response?.data?.error || 'Login failed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
+    <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg relative overflow-hidden">
+      <CartoonPlaneBackground />
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md glass-card p-8 space-y-6 shadow-2xl relative">
+        <GlowCard glowColor="rgba(6, 182, 212, 0.2)" className="w-full max-w-md p-8 space-y-6 shadow-2xl border-cyan-500/30">
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center mx-auto shadow-xl shadow-indigo-500/30">
-              <UserCheck className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-xl shadow-cyan-500/30 border border-cyan-300/30">
+              <UserCheck className="w-7 h-7 text-cyan-200" />
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+            <h2 className="text-2xl font-display font-extrabold text-white">
               Student Portal Sign In
             </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-xs text-slate-400 font-mono">
               Sign in with your registered PICT Student Credentials
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-indigo-400" />
+              <label className="text-xs font-mono font-semibold text-slate-300">
                 Student Email Address
               </label>
-              <input
+              <Input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. arjun@pict.edu"
-                className="w-full text-xs p-3.5 bg-slate-950/60 border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-colors"
+                placeholder="arjun@pict.edu"
+                icon={<Mail className="w-4 h-4" />}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <label className="text-xs font-mono font-semibold text-slate-300">
                 Password
               </label>
-              <input
+              <Input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full text-xs p-3.5 bg-slate-950/60 border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-colors"
+                icon={<Lock className="w-4 h-4" />}
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full text-xs font-bold py-3.5 rounded-xl btn-kinetic flex items-center justify-center gap-2"
+              variant="cyber"
+              size="lg"
+              isLoading={isSubmitting}
+              className="w-full gap-2 mt-2"
             >
-              <span>{isSubmitting ? 'Signing in...' : 'Sign In to Student Portal'}</span>
+              <span>Sign In to Student Portal</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </form>
 
           {/* Quick Demo Login Helper */}
-          <div className="border-t border-[var(--border-color)] pt-4 space-y-2 text-center">
-            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+          <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
+            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
               Student Quick Demo
             </span>
             <div className="flex justify-center text-[11px]">
@@ -101,27 +107,26 @@ export default function LoginPage() {
                   setEmail('arjun@pict.edu');
                   setPassword('password123');
                 }}
-                className="px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-500/20 border border-indigo-500/20 font-semibold"
+                className="px-3.5 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono font-semibold transition-all cursor-pointer"
               >
                 Auto-fill Demo Student (Arjun)
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs pt-2 border-t border-[var(--border-color)]">
-            <span className="text-[var(--text-secondary)]">
-              Don't have an account?{' '}
-              <Link href="/register" className="font-bold text-indigo-400 hover:underline">
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
+            <span className="text-slate-400">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="font-bold text-cyan-400 hover:underline">
                 Register
               </Link>
             </span>
-            <Link href="/admin/login" className="font-bold text-cyan-400 hover:underline">
-              Admin / Staff Portal →
+            <Link href="/admin/login" className="font-bold text-violet-400 hover:underline">
+              Admin Portal →
             </Link>
           </div>
-        </div>
+        </GlowCard>
       </main>
     </div>
   );
 }
-

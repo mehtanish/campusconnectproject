@@ -22,7 +22,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final ComplaintRepository complaintRepository;
-    private final LostFoundItemRepository lostFoundItemRepository;
     private final IssueTypeRepository issueTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -46,11 +45,11 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // ========== USERS ==========
         User student = userRepository.save(User.builder()
-                .name("Arjun Sharma").email("arjun@pict.edu").rollNo("CS2024001")
+                .name("Arjun Sharma").email("arjun@pict.edu").rollNo("F2510342")
                 .passwordHash(passwordEncoder.encode("password123")).role(Role.STUDENT).build());
 
         User student2 = userRepository.save(User.builder()
-                .name("Priya Patel").email("priya@pict.edu").rollNo("EC2024002")
+                .name("Priya Patel").email("priya@pict.edu").rollNo("F2510343")
                 .passwordHash(passwordEncoder.encode("password123")).role(Role.STUDENT).build());
 
         User wifiAdmin = userRepository.save(User.builder()

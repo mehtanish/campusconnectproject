@@ -1,0 +1,114 @@
+# CampusConnect — 9-Week Project Progress Logbook & Milestone Breakdown
+
+**Project Name:** CampusConnect (Student & Admin Infrastructure Management System)  
+**Institution:** Pune Institute of Computer Technology (PICT)  
+**Project Type:** Campus Infrastructure, Complaint Management & Lost-Found Verification Platform  
+
+---
+
+## 📋 Executive Summary
+This document breaks down the development of the **CampusConnect** platform over a **9-week development timeline**. The project addresses campus infrastructure resolution, complaint routing, duplicate issue detection, and an end-to-end Lost & Found item verification & security handover system.
+
+---
+
+## 🗓️ Weekly Progress Breakdown
+
+### **PHASE 1: Core Architecture, UI Framework & Authentication (Weeks 1 – 3)**
+
+#### **Week 1: Project Initialization & Design System Setup**
+* **Objective:** Establish project repository, folder architecture, and visual design system.
+* **Key Achievements:**
+  * Initialized Next.js (App Router) project with TypeScript, Tailwind CSS v4, and Lucide Icons.
+  * Designed the **Cyber / Space Command Center design system** featuring dark navy/slate palette (`#030712`), cyan highlights (`#06b6d4`), custom glassmorphism components, and responsive grid layouts.
+  * Configured global layout (`src/app/layout.tsx`), header navigation (`Navbar.tsx`), and responsive footer (`Footer.tsx`).
+
+#### **Week 2: User Authentication & Spacecraft Console UI**
+* **Objective:** Build Student & Admin authentication modules with registration validation.
+* **Key Achievements:**
+  * Implemented Student Sign-In (`/login`) and Admin Sign-In (`/admin/login`) with themed "Spacecraft ID Console" aesthetics, orbit ring avatars, and animated background elements.
+  * Designed Student Registration (`/register`) enforcing mandatory **Permanent Registration Number (PRN)** verification matching the institutional format (`F25XXXXX`).
+  * Implemented JWT/Token-based session management and Role-Based Access Control (RBAC) supporting `STUDENT`, `ADMIN`, and `SUPER_ADMIN` roles.
+
+#### **Week 3: Public Landing Page & Campus Explorer Dashboard**
+* **Objective:** Construct high-impact landing page and interactive campus statistics dashboard.
+* **Key Achievements:**
+  * Created dynamic homepage (`/`) with animated hero graphics, quick category navigation (Wi-Fi/Network, Maintenance, Mess/Canteen, Academics), and real-time campus statistics.
+  * Integrated interactive `CampusExplorer` visualizer for building-level issue reporting.
+  * Implemented basic legal notice and terms page (`/legal`) attributing copyright to "Campus Connect" as an independent student project.
+
+---
+
+### **PHASE 2: Complaint Engine & Duplicate Prevention System (Weeks 4 – 6)**
+
+#### **Week 4: Complaint Submission & Controlled Vocabulary Engine**
+* **Objective:** Build student complaint reporting interface with standardized tagging.
+* **Key Achievements:**
+  * Developed Complaint Filing portal (`/complaints/new`) with category selection, location mapping (Building/Floor/Lab), and detailed issue description.
+  * Implemented controlled issue tagging (`issueTag` & `issueTagLabel`) to categorize infrastructure issues uniformly.
+  * Added file attachment and image preview support.
+
+#### **Week 5: Algorithmic Duplicate Check & Upvoting System**
+* **Objective:** Prevent redundant complaint filing and calculate priority scores dynamically.
+* **Key Achievements:**
+  * Built duplicate detection algorithm (`/api/complaints/check-duplicate`) comparing location path and issue tags before submission.
+  * Developed Public Upvote System (`/complaints/upvoted`) enabling students to upvote active issues, boosting their resolution priority score.
+  * Created visual badges for High Priority items (issues with ≥15 upvotes).
+
+#### **Week 6: Student Dashboard & Timeline Tracking**
+* **Objective:** Provide real-time tracking for submitted student complaints.
+* **Key Achievements:**
+  * Built Student Dashboard (`/dashboard`) displaying active complaints, resolution progress bars, and admin responses.
+  * Implemented status lifecycle states (`PENDING`, `APPROVED`, `IN_PROGRESS`, `RESOLVED`, `REJECTED`).
+  * Added toast notifications using `sonner` for status updates.
+
+---
+
+### **PHASE 3: Admin Command Center, Lost & Found Module & Security Verification (Weeks 7 – 9)**
+
+#### **Week 7: Admin Priority Hub & Resolution Velocity Analytics**
+* **Objective:** Build centralized admin dashboard for complaint domain queues and reporting.
+* **Key Achievements:**
+  * Developed Admin Command Center (`/admin`) featuring domain-specific priority queues (`ComplaintPriorityQueue`).
+  * Integrated Recharts analytical chart (`Weekly Resolution Velocity & Volume`) visualizing resolution trends.
+  * Built Excel (.xlsx) report export engine (`export-complaints`, `export-lost-found`) using binary arraybuffers.
+
+#### **Week 8: Lost & Found Public Portal & Two-Tier Security Verification**
+* **Objective:** Create Lost & Found catalog and verification engine for lost property.
+* **Key Achievements:**
+  * Built Public Lost & Found Catalog (`/lost-found`) and Item Detail View (`/lost-found/[id]`).
+  * Created Found Item Reporting flow (`/lost-found/report`) with **Two-Tier Information Security**:
+    * *Public Layer:* General title, category, found location, and generic image.
+    * *Private Admin Layer:* Hidden identifying marks, secret tags, and verification Q&A pairs (e.g., "What sticker is on the back?").
+  * Built Student Claim Submission Wizard (`/lost-found/my`) with answer matching rating system (*Strong Match*, *Review Needed*, *Weak Match*).
+
+#### **Week 9: Admin Lost & Found Inventory Catalog, Claim Verification & Security Desk Handover**
+* **Objective:** Build overarching Admin Lost & Found lookup system and QR/Code handover verification.
+* **Key Achievements:**
+  * Developed **Admin Lost & Found Item Lookup & Inventory Portal** (`/admin/lost-found`):
+    * Multi-parameter search (Item ID `#item-101`, keyword, location, finder contact, secret notes).
+    * Status filters (`LISTED`, `CLAIM_PENDING`, `DISPUTED`, `HANDED_OVER`, `PENDING_REVIEW`, `REJECTED`) and view mode switcher (Table vs Grid).
+    * Secret Inspection Drawer to view confidential admin tags, verification keys, and finder custody logs.
+  * Built Admin Claims Review Queue (`/admin/lost-found/claims`) with side-by-side claim compare matrix for disputed items.
+  * Created Security Desk Handover Verification (`/admin/handover` & `/lost-found/pass/[id]`) generating 6-digit claim codes and QR codes for item pickup.
+  * Implemented System Audit Log (`/admin/lost-found/audit`) tracking administrative actions, timestamps, and IP logs.
+
+---
+
+## 📊 Summary Table of Deliverables
+
+| Week | Phase | Key Deliverables & Modules | Tech Stack / Components |
+| :--- | :--- | :--- | :--- |
+| **Week 1** | Foundation | Project setup, Cyber visual theme, design system tokens | Next.js 16, Tailwind CSS v4 |
+| **Week 2** | Auth & Security | Student/Admin Login, Register with PRN (`F25XXXXX`) | React 19, JWT, RBAC |
+| **Week 3** | Portal Home | Dynamic landing page, Campus Explorer visualizer, Legal page | Recharts, Lucide, Framer Motion |
+| **Week 4** | Complaints | Complaint filing portal, controlled issue tagging engine | Next.js API Routes, Axios |
+| **Week 5** | Duplicate Check | Location/Tag duplicate checking, Public Upvoting system | Algorithmic scoring |
+| **Week 6** | Student Portal | Student dashboard, complaint status lifecycle & timeline | Sonner Toast, Radix UI |
+| **Week 7** | Admin Hub | Priority Queue, Resolution Analytics, Excel export engine | Recharts, Excel Blob Exporter |
+| **Week 8** | Lost & Found | Public catalog, Two-Tier private security tags, Claim wizard | Image uploaders, Verification Keys |
+| **Week 9** | Admin Lookup | Admin Item Lookup & Inventory Catalog, Handover QR desk, Audit log | Table/Grid views, QR Code, Audit Log |
+
+---
+
+> [!NOTE]
+> All frontend components have been polished with custom glow effects, responsive breakpoints (320px to 4K), accessible Radix/shadcn primitives, and clean TypeScript typings.

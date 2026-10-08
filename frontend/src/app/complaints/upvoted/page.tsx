@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
 import { ComplaintStatusTracker } from '@/components/complaints/ComplaintStatusTracker';
@@ -10,25 +10,25 @@ import {
   ThumbsUp,
   Clock,
   CheckCircle2,
-  AlertCircle,
   MapPin,
   Sparkles,
   Filter,
   PlusCircle,
-  FileText,
   MessageSquare,
 } from 'lucide-react';
 import api from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import type { ComplaintResponse } from '@/types';
+import { StatCard } from '@/components/ui/StatCard';
+import { Button } from '@/components/ui/Button';
+import { GlowCard } from '@/components/ui/GlowCard';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function UpvotedComplaintsPage() {
-  const { user } = useAuth();
   const [upvotedComplaints, setUpvotedComplaints] = useState<ComplaintResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'RESOLVED'>('ALL');
 
-  const fetchUpvotedComplaints = async () => {
+  const fetchUpvotedComplaints = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await api.get<ComplaintResponse[]>('/api/complaints/upvoted');
@@ -38,11 +38,15 @@ export default function UpvotedComplaintsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchUpvotedComplaints();
-  }, []);
+    let isMounted = true;
+    Promise.resolve().then(() => {
+      if (isMounted) fetchUpvotedComplaints();
+    });
+    return () => { isMounted = false; };
+  }, [fetchUpvotedComplaints]);
 
   const totalUpvoted = upvotedComplaints.length;
   const activeUpvoted = upvotedComplaints.filter(
@@ -61,86 +65,65 @@ export default function UpvotedComplaintsPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
+    <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Live Status Feed for Upvoted Issues</span>
+              <span>COMMUNITY PRIORITY FEED</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)]">
-              Upvoted Complaints <span className="gradient-text">History</span>
+            <h1 className="text-3xl font-display font-extrabold text-white">
+              Upvoted Complaints <span className="gradient-text-cyber">History</span>
             </h1>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Every complaint you upvote is stored here so you can get live status updates and admin notes in real time.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/complaints/new"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-xs shadow-lg shadow-indigo-500/20 hover:opacity-90 transition-opacity"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>File New Issue</span>
+            <Link href="/complaints/new">
+              <Button variant="cyber" size="sm" className="gap-2">
+                <PlusCircle className="w-4 h-4" />
+                <span>File New Issue</span>
+              </Button>
             </Link>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="glass-card p-5 space-y-2 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                Total Upvoted
-              </span>
-              <div className="text-2xl font-bold text-[var(--text-primary)]">
-                {totalUpvoted}
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-              <ThumbsUp className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="glass-card p-5 space-y-2 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                Active & In Progress
-              </span>
-              <div className="text-2xl font-bold text-amber-400">
-                {activeUpvoted}
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="glass-card p-5 space-y-2 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                Resolved Issues
-              </span>
-              <div className="text-2xl font-bold text-emerald-400">
-                {resolvedUpvoted}
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <StatCard
+            title="Total Upvoted"
+            value={totalUpvoted}
+            subtitle="Issues upvoted by you"
+            icon={<ThumbsUp className="w-5 h-5 text-cyan-400" />}
+            glowColor="rgba(6, 182, 212, 0.2)"
+          />
+          <StatCard
+            title="Active / Pending"
+            value={activeUpvoted}
+            subtitle="Under investigation or in progress"
+            icon={<Clock className="w-5 h-5 text-amber-400" />}
+            glowColor="rgba(245, 158, 11, 0.2)"
+          />
+          <StatCard
+            title="Resolved Issues"
+            value={resolvedUpvoted}
+            subtitle="Closed community issues"
+            icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+            glowColor="rgba(16, 185, 129, 0.2)"
+          />
         </div>
 
         {/* Filters */}
-        <div className="flex items-center justify-between gap-4 border-b border-[var(--border-color)] pb-4">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+            <Filter className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
               Filter Status:
             </span>
           </div>
@@ -150,10 +133,10 @@ export default function UpvotedComplaintsPage() {
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
                   filter === tab
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)]'
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/25'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
                 {tab === 'ALL' ? 'All Upvoted' : tab === 'ACTIVE' ? 'Active / Pending' : 'Resolved'}
@@ -166,22 +149,21 @@ export default function UpvotedComplaintsPage() {
         <div className="space-y-4">
           {isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-36 glass-card animate-pulse" />
-              ))}
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-36 w-full" />
             </div>
           ) : filteredComplaints.length === 0 ? (
-            <div className="text-center py-16 glass-card space-y-3">
-              <ThumbsUp className="w-10 h-10 text-[var(--text-muted)] mx-auto" />
-              <p className="text-sm font-medium text-[var(--text-secondary)]">
+            <GlowCard className="text-center py-16 space-y-3">
+              <ThumbsUp className="w-10 h-10 text-slate-600 mx-auto" />
+              <p className="text-sm font-medium text-slate-300 font-mono">
                 {filter === 'ALL'
                   ? "You haven't upvoted any complaints yet."
                   : `No ${filter.toLowerCase()} upvoted complaints found.`}
               </p>
-              <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
                 When you or a classmate select a location with an existing issue, upvote it to escalate priority and track live status updates here!
               </p>
-            </div>
+            </GlowCard>
           ) : (
             <AnimatePresence mode="popLayout">
               {filteredComplaints.map((item) => (
@@ -192,64 +174,65 @@ export default function UpvotedComplaintsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.2 }}
-                  className="glass-card p-6 space-y-5 border-l-4 border-l-indigo-500"
                 >
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-md">
-                          {item.categoryName}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md">
-                          TAG: {item.issueTagLabel || item.issueTag}
-                        </span>
-                        <span className="text-[10px] text-[var(--text-muted)]">
-                          Filed by {item.studentName}
-                        </span>
+                  <GlowCard className="p-6 space-y-5 border-l-4 border-l-cyan-400">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div className="space-y-1.5 text-left">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-0.5 rounded-md">
+                            {item.categoryName}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-violet-300 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-md">
+                            TAG: {item.issueTagLabel || item.issueTag}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            Filed by {item.studentName}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base sm:text-lg font-display font-bold text-white pt-1">
+                          {item.title}
+                        </h3>
+
+                        <div className="flex items-center gap-2 text-xs text-cyan-300 font-mono">
+                          <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <span>{item.locationPath}</span>
+                        </div>
                       </div>
 
-                      <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                        {item.title}
-                      </h3>
-
-                      <div className="flex items-center gap-2 text-xs text-indigo-300 font-mono">
-                        <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span>{item.locationPath}</span>
+                      <div className="shrink-0">
+                        <UpvoteButton
+                          complaintId={item.id}
+                          initialCount={item.upvoteCount}
+                          initialHasUpvoted={item.hasUpvoted}
+                          onUpvoteSuccess={() => fetchUpvotedComplaints()}
+                        />
                       </div>
                     </div>
 
-                    <div className="shrink-0">
-                      <UpvoteButton
-                        complaintId={item.id}
-                        initialCount={item.upvoteCount}
-                        initialHasUpvoted={item.hasUpvoted}
-                        onUpvoteSuccess={() => fetchUpvotedComplaints()}
-                      />
-                    </div>
-                  </div>
+                    <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 text-left">
+                      {item.description}
+                    </p>
 
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed bg-slate-950/40 p-3.5 rounded-xl border border-[var(--border-color)]">
-                    {item.description}
-                  </p>
-
-                  {/* Live Status Tracker */}
-                  <div className="space-y-2">
-                    <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                      Live Resolution Status
-                    </div>
-                    <ComplaintStatusTracker currentStatus={item.status} />
-                  </div>
-
-                  {/* Admin Response Note */}
-                  {item.adminNote && (
-                    <div className="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-xs text-indigo-200 space-y-1.5 shadow-lg">
-                      <div className="flex items-center gap-1.5 font-bold text-indigo-400">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Official Admin Note & Update:</span>
+                    {/* Live Status Tracker */}
+                    <div className="space-y-2 text-left">
+                      <div className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                        Live Resolution Status
                       </div>
-                      <p className="italic text-indigo-100">{item.adminNote}</p>
+                      <ComplaintStatusTracker currentStatus={item.status} />
                     </div>
-                  )}
+
+                    {/* Admin Response Note */}
+                    {item.adminNote && (
+                      <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-xs text-cyan-200 space-y-1.5 shadow-lg text-left">
+                        <div className="flex items-center gap-1.5 font-bold font-mono text-cyan-400">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Official Admin Note & Update:</span>
+                        </div>
+                        <p className="italic text-cyan-100">{item.adminNote}</p>
+                      </div>
+                    )}
+                  </GlowCard>
                 </motion.div>
               ))}
             </AnimatePresence>

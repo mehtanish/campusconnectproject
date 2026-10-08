@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { Navbar } from '@/components/layout/Navbar';
-import { Shield, Lock, Mail, ArrowRight, Activity, AlertCircle } from 'lucide-react';
+import { Shield, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import { GlowCard } from '@/components/ui/GlowCard';
+import { Input } from '@/components/ui/Input';
+import { CartoonPlaneBackground } from '@/components/background/CartoonPlaneBackground';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -23,109 +27,101 @@ export default function AdminLoginPage() {
       await login({ email, password });
       toast.success('Admin authenticated successfully!');
       router.push('/admin');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Admin login failed');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      toast.error(errorObj.response?.data?.error || 'Admin login failed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
+    <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg relative overflow-hidden">
+      <CartoonPlaneBackground />
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md glass-card p-8 space-y-6 border border-indigo-500/30 shadow-2xl relative">
+        <GlowCard glowColor="rgba(139, 92, 246, 0.25)" className="w-full max-w-md p-8 space-y-6 shadow-2xl border-violet-500/30">
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-indigo-500/40">
-              <Shield className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-violet-500/30 border border-violet-300/30">
+              <Shield className="w-7 h-7 text-violet-200" />
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+            <h2 className="text-2xl font-display font-extrabold text-white">
               Admin & Staff Portal
             </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-xs text-slate-400 font-mono">
               Official PICT Campus Authority Authentication
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              <label className="text-xs font-mono font-semibold text-slate-300">
                 Staff Email Address
               </label>
-              <input
+              <Input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. wifi.admin@pict.edu"
-                className="w-full text-xs p-3.5 bg-slate-950/60 border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-colors"
+                placeholder="super.admin@pict.edu"
+                icon={<Mail className="w-4 h-4 text-cyan-400" />}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+              <label className="text-xs font-mono font-semibold text-slate-300">
                 Admin Password
               </label>
-              <input
+              <Input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full text-xs p-3.5 bg-slate-950/60 border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-colors"
+                icon={<Lock className="w-4 h-4 text-cyan-400" />}
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full text-xs font-bold py-3.5 rounded-xl btn-kinetic flex items-center justify-center gap-2"
+              variant="cyber"
+              size="lg"
+              isLoading={isSubmitting}
+              className="w-full gap-2 mt-2"
             >
-              <span>{isSubmitting ? 'Authenticating...' : 'Sign In as Staff / Admin'}</span>
+              <span>Sign In as Staff / Admin</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </form>
 
           {/* Quick Staff Credentials Helper */}
-          <div className="border-t border-[var(--border-color)] pt-4 space-y-2 text-center">
-            <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+          <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
+            <div className="flex items-center justify-center gap-1 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
               <AlertCircle className="w-3 h-3" />
-              <span>Official Admin Accounts</span>
+              <span>Official Admin Account</span>
             </div>
-            <div className="flex flex-wrap gap-1.5 justify-center text-[11px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('wifi.admin@pict.edu');
-                  setPassword('admin123');
-                }}
-                className="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-lg hover:bg-amber-500/20 border border-amber-500/30"
-              >
-                WiFi Admin
-              </button>
+            <div className="flex justify-center text-[11px]">
               <button
                 type="button"
                 onClick={() => {
                   setEmail('super.admin@pict.edu');
                   setPassword('superadmin123');
                 }}
-                className="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 rounded-lg hover:bg-cyan-500/20 border border-cyan-500/30"
+                className="px-3 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono cursor-pointer transition-colors"
               >
-                Super Admin
+                Campus Admin (super.admin@pict.edu)
               </button>
             </div>
           </div>
 
-          <div className="text-center text-xs text-[var(--text-secondary)]">
+          <div className="text-center text-xs text-slate-400 font-mono pt-2 border-t border-slate-800">
             Are you a student?{' '}
-            <Link href="/login" className="font-semibold text-indigo-400 hover:underline">
+            <Link href="/login" className="font-bold text-cyan-400 hover:underline">
               Go to Student Login
             </Link>
           </div>
-        </div>
+        </GlowCard>
       </main>
     </div>
   );

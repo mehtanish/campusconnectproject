@@ -18,9 +18,22 @@ export type ComplaintStatus =
   | 'RESOLVED'
   | 'REJECTED';
 
-export type ItemStatus = 'LISTED' | 'CLAIM_PENDING' | 'RETURNED';
+// ---- Admin Stats ----
+export interface AdminStats {
+  totalComplaints: number;
+  pendingComplaints: number;
+  resolvedComplaints: number;
+  inProgressComplaints: number;
+}
 
-export type ClaimStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+// ---- Status Config ----
+export const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgColor: string; dotColor: string }> = {
+  PENDING: { label: 'Pending', color: 'text-slate-400', bgColor: 'bg-slate-500/10', dotColor: 'bg-slate-400' },
+  APPROVED: { label: 'Approved', color: 'text-blue-400', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-400' },
+  IN_PROGRESS: { label: 'In Progress', color: 'text-amber-400', bgColor: 'bg-amber-500/10', dotColor: 'bg-amber-400' },
+  RESOLVED: { label: 'Resolved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', dotColor: 'bg-emerald-400' },
+  REJECTED: { label: 'Rejected', color: 'text-rose-400', bgColor: 'bg-rose-500/10', dotColor: 'bg-rose-400' },
+};
 
 // ---- Auth ----
 export interface LoginRequest {
@@ -128,60 +141,4 @@ export interface UpvoteResponse {
   highPriority: boolean;
 }
 
-// ---- Lost & Found ----
-export interface LostFoundResponse {
-  id: string;
-  title: string;
-  category: string;
-  foundLocation: string;
-  foundDate: string;
-  imageUrl: string | null;
-  status: ItemStatus;
-  finderName: string;
-  finderId: string;
-  claimCode: string | null;
-  hiddenDetails: string | null;
-  createdAt: string;
-}
 
-export interface ClaimRequest {
-  itemId: string;
-  proofDescription: string;
-}
-
-export interface ClaimResponse {
-  id: string;
-  itemId: string;
-  itemTitle: string;
-  claimantId: string;
-  claimantName: string;
-  claimantRollNo: string;
-  proofDescription: string;
-  status: ClaimStatus;
-  claimCode: string | null;
-  createdAt: string;
-}
-
-// ---- Admin Stats ----
-export interface AdminStats {
-  totalComplaints: number;
-  pendingComplaints: number;
-  resolvedComplaints: number;
-  inProgressComplaints: number;
-  totalLostFound: number;
-}
-
-// ---- Status Config ----
-export const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgColor: string; dotColor: string }> = {
-  PENDING: { label: 'Pending', color: 'text-slate-400', bgColor: 'bg-slate-500/10', dotColor: 'bg-slate-400' },
-  APPROVED: { label: 'Approved', color: 'text-blue-400', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-400' },
-  IN_PROGRESS: { label: 'In Progress', color: 'text-amber-400', bgColor: 'bg-amber-500/10', dotColor: 'bg-amber-400' },
-  RESOLVED: { label: 'Resolved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', dotColor: 'bg-emerald-400' },
-  REJECTED: { label: 'Rejected', color: 'text-rose-400', bgColor: 'bg-rose-500/10', dotColor: 'bg-rose-400' },
-};
-
-export const ITEM_STATUS_CONFIG: Record<ItemStatus, { label: string; color: string; bgColor: string }> = {
-  LISTED: { label: 'Listed', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-  CLAIM_PENDING: { label: 'Claim Pending', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-  RETURNED: { label: 'Returned', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-};

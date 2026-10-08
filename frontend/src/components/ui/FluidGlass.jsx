@@ -207,8 +207,13 @@ function NavItems({ items }) {
   });
 
   const handleNavigate = (link) => {
-    if (!link) return;
-    link.startsWith('#') ? (window.location.hash = link) : (window.location.href = link);
+    if (!link || typeof window === 'undefined') return;
+    if (link.startsWith('#')) {
+      // eslint-disable-next-line react-hooks/immutability
+      window.location.hash = link;
+    } else {
+      window.location.assign(link);
+    }
   };
 
   return (

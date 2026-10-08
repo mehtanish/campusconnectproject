@@ -91,7 +91,7 @@ export function DuplicateComplaintModal({
                 Original Complaint Headline
               </span>
               <h3 className="text-lg font-extrabold text-[var(--text-primary)]">
-                "{existingComplaint.title}"
+                &quot;{existingComplaint.title}&quot;
               </h3>
             </div>
 

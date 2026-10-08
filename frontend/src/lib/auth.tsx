@@ -23,16 +23,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load persisted auth state
+  // Load persisted auth state safely
   useEffect(() => {
-    const savedToken = localStorage.getItem('campuspulse_token');
-    const savedUser = localStorage.getItem('campuspulse_user');
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const savedToken = localStorage.getItem('campuspulse_token');
+        const savedUser = localStorage.getItem('campuspulse_user');
 
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+        if (savedToken && savedUser) {
+          setToken(savedToken);
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch {
+            // ignore parse error
+          }
+        }
+      }
+      setIsLoading(false);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const persistAuth = useCallback((authResponse: AuthResponse) => {

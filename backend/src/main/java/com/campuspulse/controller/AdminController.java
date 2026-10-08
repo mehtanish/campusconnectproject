@@ -2,13 +2,10 @@ package com.campuspulse.controller;
 
 import com.campuspulse.dto.complaint.ComplaintResponse;
 import com.campuspulse.dto.complaint.StatusUpdateRequest;
-import com.campuspulse.dto.lostfound.ClaimResponse;
 import com.campuspulse.model.User;
 import com.campuspulse.model.enums.ComplaintStatus;
 import com.campuspulse.model.enums.Role;
 import com.campuspulse.repository.ComplaintRepository;
-import com.campuspulse.repository.LostFoundItemRepository;
-import com.campuspulse.service.ClaimService;
 import com.campuspulse.service.ComplaintService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +23,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final ComplaintService complaintService;
-    private final ClaimService claimService;
     private final ComplaintRepository complaintRepository;
-    private final LostFoundItemRepository lostFoundItemRepository;
 
     /** Get complaints filtered by admin's domain role */
     @GetMapping("/complaints")
@@ -41,7 +36,6 @@ public class AdminController {
                 admin.getRole(), admin.getId()));
     }
 
-
     /** Update complaint status with admin note */
     @PatchMapping("/complaints/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(
@@ -49,24 +43,6 @@ public class AdminController {
             @Valid @RequestBody StatusUpdateRequest request,
             @AuthenticationPrincipal User admin) {
         return ResponseEntity.ok(complaintService.updateStatus(id, request, admin));
-    }
-
-    /** Get pending claims for admin review */
-    @GetMapping("/claims/pending")
-    public ResponseEntity<List<ClaimResponse>> getPendingClaims() {
-        return ResponseEntity.ok(claimService.getPendingClaims());
-    }
-
-    /** Approve a claim and generate claim code */
-    @PostMapping("/lost-found/{claimId}/approve")
-    public ResponseEntity<ClaimResponse> approveClaim(@PathVariable UUID claimId) {
-        return ResponseEntity.ok(claimService.approveClaim(claimId));
-    }
-
-    /** Reject a claim */
-    @PostMapping("/lost-found/{claimId}/reject")
-    public ResponseEntity<ClaimResponse> rejectClaim(@PathVariable UUID claimId) {
-        return ResponseEntity.ok(claimService.rejectClaim(claimId));
     }
 
     /** Dashboard analytics stats */
@@ -90,15 +66,11 @@ public class AdminController {
             inProgressComplaints = domainComplaints.stream().filter(c -> c.getStatus() == ComplaintStatus.IN_PROGRESS).count();
         }
 
-        long totalLostFound = lostFoundItemRepository.count();
-
         return ResponseEntity.ok(Map.of(
                 "totalComplaints", totalComplaints,
                 "pendingComplaints", pendingComplaints,
                 "resolvedComplaints", resolvedComplaints,
-                "inProgressComplaints", inProgressComplaints,
-                "totalLostFound", totalLostFound
+                "inProgressComplaints", inProgressComplaints
         ));
     }
-
 }

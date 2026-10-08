@@ -20,18 +20,18 @@ const DEFAULT_ITEMS = [
 
 const OptionWheel = ({
   items = DEFAULT_ITEMS,
-  defaultSelected = 3,
+  defaultSelected = 0,
   onChange,
-  textColor = '#a6a6a6',
-  activeColor = '#ffffff',
+  textColor = '#94a3b8',
+  activeColor = '#06b6d4',
   side = 'left',
   fontSize = 3,
   spacing = 1.4,
   curve = 1,
   tilt = 6,
-  blur = 2,
-  fade = 0.25,
-  minOpacity = 0.05,
+  blur = 0,
+  fade = 0.18,
+  minOpacity = 0.6,
   smoothing = 200,
   inset = 80,
   loop = false,
@@ -60,23 +60,28 @@ const OptionWheel = ({
 
   const remPx = typeof window !== 'undefined' ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16 : 16;
 
-  onChangeRef.current = onChange;
-  cfgRef.current = {
-    count: items.length,
-    items,
-    rowH: Math.max(fontSize * spacing * remPx, 1),
-    curve,
-    tilt,
-    blur,
-    fade,
-    minOpacity,
-    side,
-    loop,
-    smoothing,
-    draggable,
-    soundUrl,
-    soundVolume
-  };
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    cfgRef.current = {
+      count: items.length,
+      items,
+      rowH: Math.max(fontSize * spacing * remPx, 1),
+      curve,
+      tilt,
+      blur,
+      fade,
+      minOpacity,
+      side,
+      loop,
+      smoothing,
+      draggable,
+      soundUrl,
+      soundVolume
+    };
+  }, [onChange, items, fontSize, spacing, remPx, curve, tilt, blur, fade, minOpacity, side, loop, smoothing, draggable, soundUrl, soundVolume]);
+
+
+  const runFrameRef = useRef(null);
 
   const runFrame = useCallback(now => {
     const dt = Math.min((now - lastRef.current) / 1000, 0.05);
@@ -121,8 +126,12 @@ const OptionWheel = ({
       el.style.setProperty('--ow-p', Math.max(0, 1 - Math.min(dist, 1)).toFixed(4));
     }
 
-    rafRef.current = settled ? null : requestAnimationFrame(runFrame);
+    rafRef.current = settled ? null : requestAnimationFrame((t) => runFrameRef.current?.(t));
   }, []);
+
+  useEffect(() => {
+    runFrameRef.current = runFrame;
+  }, [runFrame]);
 
   const startLoop = useCallback(() => {
     if (rafRef.current != null) {
@@ -258,9 +267,10 @@ const OptionWheel = ({
   return (
     <div
       ref={rootRef}
-      role="listbox"
+      role="tablist"
+      aria-orientation="vertical"
       tabIndex={0}
-      aria-label="Option wheel"
+      aria-label="Campus Building Selector"
       className={`option-wheel${side === 'right' ? ' option-wheel--right' : ''}${isDragging ? ' option-wheel--dragging' : ''}${className ? ` ${className}` : ''}`}
       style={{
         '--ow-text-color': textColor,
@@ -280,8 +290,11 @@ const OptionWheel = ({
           ref={el => {
             itemRefs.current[index] = el;
           }}
-          role="option"
+          role="tab"
+          id={`building-tab-${index}`}
           aria-selected={selectedIndex === index}
+          aria-controls={`building-panel-${index}`}
+          tabIndex={selectedIndex === index ? 0 : -1}
           className={`option-wheel__item${selectedIndex === index ? ' option-wheel__item--selected' : ''}`}
           onClick={() => handleItemClick(index)}
         >

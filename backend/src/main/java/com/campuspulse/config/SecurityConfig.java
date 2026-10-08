@@ -33,10 +33,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issue-types/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/lost-found").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
 
                 // Admin endpoints — any ADMIN_* or SUPER_ADMIN role

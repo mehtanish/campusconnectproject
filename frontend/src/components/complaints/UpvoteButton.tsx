@@ -75,11 +75,14 @@ export function UpvoteButton({
       }
 
       onUpvoteSuccess?.(updatedCount, highPriority);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Rollback on error
       setCount(count);
       setHasUpvoted(false);
-      toast.error(err.response?.data?.error || 'Failed to upvote');
+      const message = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+        : 'Failed to upvote';
+      toast.error(message || 'Failed to upvote');
     } finally {
       setIsLoading(false);
       // Clean particle

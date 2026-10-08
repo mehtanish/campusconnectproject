@@ -19,19 +19,6 @@ public class ReportController {
 
     private final ExcelReportService excelReportService;
 
-    @GetMapping("/export-lost-found")
-    public ResponseEntity<byte[]> exportLostFoundReport() throws IOException {
-        byte[] report = excelReportService.generateLostFoundReport();
-
-        String filename = "lost-found-report-" + LocalDate.now() + ".xlsx";
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                .contentType(MediaType.parseMediaType(
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(report);
-    }
-
     @GetMapping("/export-complaints")
     public ResponseEntity<byte[]> exportComplaintsReport() throws IOException {
         byte[] report = excelReportService.generateComplaintsReport();

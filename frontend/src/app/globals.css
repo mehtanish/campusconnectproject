@@ -1,10 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 :root {
-  --bg-primary: #080c14;
+  --bg-primary: #030712;
   --bg-secondary: #0f172a;
   --bg-card: rgba(15, 23, 42, 0.65);
   --text-primary: #f8fafc;
@@ -15,9 +21,9 @@
   --glass-border: rgba(255, 255, 255, 0.12);
   --neon-indigo: #6366f1;
   --neon-cyan: #06b6d4;
-  --neon-violet: #a855f7;
+  --neon-violet: #8b5cf6;
   --neon-pink: #ec4899;
-  --glow-color: rgba(99, 102, 241, 0.25);
+  --glow-color: rgba(6, 182, 212, 0.25);
 }
 
 * {
@@ -25,12 +31,12 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), 'Inter', system-ui, sans-serif;
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.12) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
   background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -38,59 +44,73 @@ body {
   overflow-x: hidden;
 }
 
-/* ====== Kinetic 3D Neon Glossy Card ====== */
-.glass-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.07) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  ), var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 0 20px rgba(99, 102, 241, 0.05);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
+/* ====== Cyber Dot Matrix Grid Overlay ====== */
+.cyber-grid-bg {
+  background-size: 32px 32px;
+  background-image: 
+    radial-gradient(circle, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
 }
 
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
-  transform: rotate(30deg);
-  pointer-events: none;
+/* ====== Glassmorphism Cyber Card ====== */
+.glass-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background-color: var(--glass-bg);
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 20px rgba(6, 182, 212, 0.04);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-  transform: translateY(-4px) scale(1.01);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(6, 182, 212, 0.4);
   box-shadow: 
-    0 30px 60px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(99, 102, 241, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 25px rgba(6, 182, 212, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .glass-card-sm {
-  background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* ====== Neon Glow Borders & Badges ====== */
+/* ====== Cyber Glow Button ====== */
+.cyber-button-glow {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.25s ease;
+}
+
+.cyber-button-glow:hover {
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.6), 0 0 12px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ====== Neon Animated Gradient Border ====== */
 .neon-glow-border {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
 }
 
 .neon-glow-border::after {
@@ -98,96 +118,106 @@ body {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  padding: 1.5px;
-  background: linear-gradient(135deg, var(--neon-indigo), var(--neon-cyan), var(--neon-violet));
+  padding: 1px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet), var(--neon-pink));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.6;
+  opacity: 0.5;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .neon-glow-border:hover::after {
   opacity: 1;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
 }
 
-/* ====== Vibrant 3D Gradient Text ====== */
-.gradient-text {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 40%, #38bdf8 100%);
+/* ====== Cyberpunk Gradient Text ====== */
+.gradient-text-cyber {
+  background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #f43f5e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 15px rgba(129, 140, 248, 0.3));
+  filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.35));
+}
+
+.font-display {
+  font-family: var(--font-display), 'Space Grotesk', system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
 }
 
 /* ====== Kinetic Glowing Buttons ====== */
-.btn-kinetic {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+.btn-cyber {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
   color: #ffffff;
-  border-radius: 16px;
+  border-radius: 14px;
   font-weight: 600;
   box-shadow: 
-    0 10px 25px -5px rgba(99, 102, 241, 0.5),
+    0 8px 20px -4px rgba(6, 182, 212, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-kinetic:hover {
+.btn-cyber:hover {
   transform: translateY(-2px);
   box-shadow: 
-    0 15px 35px -5px rgba(168, 85, 247, 0.6),
-    0 0 25px rgba(99, 102, 241, 0.6),
+    0 12px 28px -4px rgba(139, 92, 246, 0.6),
+    0 0 20px rgba(6, 182, 212, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.btn-kinetic:active {
+.btn-cyber:active {
   transform: translateY(1px);
-}
-
-/* ====== Custom Floating Keyframes ====== */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(1deg); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-  50% { box-shadow: 0 0 35px rgba(168, 85, 247, 0.6); }
-}
-
-.pulse-glow {
-  animation: pulseGlow 3s ease-in-out infinite;
 }
 
 /* ====== Custom Scrollbar ====== */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(8, 12, 20, 0.8);
+  background: rgba(3, 7, 18, 0.9);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(6, 182, 212, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.6);
+  background: rgba(139, 92, 246, 0.6);
 }
 
 /* ====== Selection ====== */
 ::selection {
-  background: rgba(168, 85, 247, 0.4);
+  background: rgba(6, 182, 212, 0.35);
   color: #ffffff;
 }
 
+/* ====== Orbit Ring Rotation ====== */
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit-ring {
+  animation: orbit-spin 16s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-orbit-ring {
+    animation: none !important;
+  }
+}

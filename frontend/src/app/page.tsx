@@ -1,296 +1,455 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/layout/Navbar';
-import { useAuth } from '@/lib/auth';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Activity, ShieldCheck, Flame, Search, ArrowRight, Sparkles, Zap, Layers, Shield,
-  Building2, BookOpen, Wifi, UtensilsCrossed, Home as HomeIcon, ShieldAlert, Monitor, GraduationCap,
-} from 'lucide-react';
-import OptionWheel from '@/components/ui/OptionWheel';
-import TrueFocus from '@/components/ui/TrueFocus';
-
 import dynamic from 'next/dynamic';
+import { Navbar } from '@/components/layout/Navbar';
+import { motion } from 'framer-motion';
+import {
+  Flame,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Layers,
+  Building2,
+  CheckCircle2,
+  Clock,
+  CheckSquare,
+  Shield,
+  FileSearch,
+} from 'lucide-react';
+import TrueFocus from '@/components/ui/TrueFocus';
+import { GlowCard } from '@/components/ui/GlowCard';
+import { StatCard } from '@/components/ui/StatCard';
+import { Button } from '@/components/ui/Button';
+import { CampusExplorer } from '@/components/ui/CampusExplorer';
+import {
+  LiveFeedAndTrack,
+  FAQSection,
+  CTABanner,
+} from '@/components/ui/HomeSections';
 
-const FluidGlass = dynamic(() => import('@/components/ui/FluidGlass'), {
+import api from '@/lib/api';
+
+import { CampusNoticeBoard } from '@/components/ui/CampusNoticeBoard';
+
+const InteractiveBackground = dynamic(() => import('@/components/background/InteractiveBackground'), {
   ssr: false,
-  loading: () => (
-    <h1 className="text-4xl sm:text-7xl font-extrabold tracking-tight leading-tight">
-      Pune Institute of Computer Technology <br />
-      <span className="gradient-text">Campus Connect</span>
-    </h1>
-  ),
 });
 
-const CAMPUS_FACILITIES = [
-  { name: 'A1 Building', icon: Building2, floors: 5, desc: 'Five-floor academic block with classrooms, labs, gents & ladies washrooms, corridor lighting, and WiFi access points on every floor.' },
-  { name: 'A2 Building', icon: Building2, floors: 4, desc: 'Four-floor academic block housing advanced computer labs, seminar halls, and faculty offices with full WiFi coverage.' },
-  { name: 'A3 Building', icon: Building2, floors: 5, desc: 'Five-floor block with state-of-the-art research labs, project rooms, and presentation halls.' },
-  { name: 'F1 Building', icon: Monitor, floors: 3, desc: 'Three-floor facility with specialized engineering workshops, maker spaces, and technical labs.' },
-  { name: 'Central Library', icon: BookOpen, floors: 1, desc: 'Massive reading hall and book repository with thousands of titles across CS, IT, Electronics, and more.' },
-  { name: 'Digital Library', icon: Wifi, floors: 1, desc: 'High-speed WiFi zone with 100+ workstations, e-journals access, and digital resource terminals.' },
-  { name: 'Campus Canteen', icon: UtensilsCrossed, floors: 1, desc: 'Multi-cuisine food court offering snacks, beverages, and full meals with strict hygiene standards.' },
-  { name: 'Student Mess', icon: UtensilsCrossed, floors: 4, desc: 'Four-floor regular mess facility with dedicated kitchen hygiene, serving counters, and timing management.' },
-  { name: 'Boys Hostel', icon: HomeIcon, floors: 5, desc: '77 rooms across 5 floors with dispensary, common washrooms, water purifiers, and in-room WiFi routers.' },
-  { name: 'Girls Hostel', icon: HomeIcon, floors: 7, desc: 'Seven-floor hostel with 280+ rooms, floor-wise washrooms, WiFi routers, and 24/7 security monitoring.' },
-  { name: 'Main Gate Security', icon: ShieldAlert, floors: 0, desc: 'Campus entry checkpoint with visitor management, vehicle logging, and emergency response coordination.' },
-  { name: 'Hostel Security', icon: ShieldAlert, floors: 0, desc: 'Dedicated hostel security desk with night patrol, biometric access, and emergency hotline.' },
-];
+
 
 export default function Home() {
-  const router = useRouter();
-  const { isAuthenticated, isAdmin } = useAuth();
-  const [selectedFacility, setSelectedFacility] = useState(0);
+  const [stats, setStats] = React.useState({
+    totalComplaints: 0,
+    resolvedComplaints: 0,
+    inProgressComplaints: 0,
+    pendingComplaints: 0,
+    deduplicationRate: 98.4,
+    avgResponseHours: 4.2
+  });
 
-  const currentFacility = CAMPUS_FACILITIES[selectedFacility];
-  const FacilityIcon = currentFacility?.icon || Building2;
+  React.useEffect(() => {
+    api.get('/api/public/stats')
+      .then((res) => {
+        if (res.data) {
+          setStats(res.data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch live public stats:', err);
+      });
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
+    <div className="min-h-screen flex flex-col bg-transparent relative z-10">
+      <InteractiveBackground />
       <Navbar />
 
-      {/* Hero Section */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center text-center justify-center relative">
-        {/* Kinetic Background Orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/20 blur-[140px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-1/3 left-1/3 w-[400px] h-[400px] bg-purple-600/15 blur-[120px] rounded-full pointer-events-none" />
+      <main className="flex-1 w-full flex flex-col items-center">
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 1. HERO SECTION                                           */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 md:pt-10 md:pb-20 flex flex-col items-center justify-center relative">
+          {/* Ambient Radial Blur Blobs */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-cyan-500/10 blur-[150px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-1/3 left-1/3 w-[450px] h-[450px] bg-violet-600/10 blur-[130px] rounded-full pointer-events-none" />
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="space-y-8 max-w-4xl z-10"
-        >
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-cyan-400 text-xs font-semibold backdrop-blur-md shadow-lg shadow-indigo-500/10">
-            <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
-            <span>Official PICT Pune Student & Admin Platform</span>
-          </div>
+          {/* Eye-Catching Top Live Intelligence Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full mb-8 z-10"
+          >
+            <div className="relative group overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl p-3 sm:p-4 shadow-xl shadow-cyan-500/10 hover:border-cyan-400/50 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/15 via-violet-500/15 to-emerald-500/15 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400"></span>
+                  </span>
+                  <span className="font-mono text-cyan-300 font-bold uppercase tracking-wider text-[11px] sm:text-xs">
+                    PICT Campus Intelligence Node:
+                  </span>
+                  <span className="text-slate-200 font-medium hidden sm:inline">
+                    Automated Issue Triaging & Smart Campus Management Operational
+                  </span>
+                </div>
 
-          {/* Hero Title with TrueFocus Animation */}
-          <h1 className="text-4xl sm:text-7xl font-extrabold tracking-tight leading-tight py-2">
-            Pune Institute of Computer Technology <br />
-            <span className="gradient-text inline-block pt-2">
-              <TrueFocus 
-                sentence="Campus Connect"
-                manualMode={false}
-                blurAmount={5}
-                borderColor="#22d3ee"
-                glowColor="rgba(34, 211, 238, 0.6)"
-                animationDuration={0.6}
-                pauseBetweenAnimations={1.2}
-              />
-            </span>
-          </h1>
+                <div className="flex items-center gap-3 font-mono text-[11px] text-slate-300">
+                  <span className="px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-semibold flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-cyan-400 animate-pulse" /> AI Deduplication {stats.deduplicationRate ? stats.deduplicationRate.toFixed(1) : 98.4}%
+                  </span>
+                  <span className="hidden md:flex px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {stats.resolvedComplaints} Resolved
+                  </span>
+                  <Link href="/complaints/new" className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 group/link">
+                    <span>Quick Report</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
-          {/* FluidGlass Glass Refraction Lens Overlay (Temporarily Commented Out)
-          <div className="absolute inset-0 z-20 w-full h-full pointer-events-auto">
-            <FluidGlass
-              mode="lens"
-              lensProps={{
-                scale: 0.3,
-                ior: 1.25,
-                thickness: 6,
-                chromaticAberration: 0.15,
-                anisotropy: 0.05
-              }}
-              titleText1="Pune Institute of Computer Technology"
-              titleText2="Campus Connect"
-            />
-          </div>
-          */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full z-10">
+            {/* Left Hero Text Column */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-left space-y-6"
+            >
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono font-semibold backdrop-blur-md shadow-lg shadow-cyan-500/10">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} aria-hidden="true" />
+                <span>PICT PUNE COMMAND CENTER</span>
+              </div>
 
-          <p className="text-base sm:text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
-            Report infrastructure issues across PICT hostels, labs, mess & IT network, upvote priority concerns, auto-detect duplicate complaints, and securely resolve lost & found items.
-          </p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.1] text-white">
+                Pune Institute of Computer Technology <br />
+                <span className="gradient-text-cyber inline-block pt-2">
+                  <TrueFocus
+                    sentence="Campus Connect"
+                    manualMode={false}
+                    blurAmount={5}
+                    borderColor="#06b6d4"
+                    glowColor="rgba(6, 182, 212, 0.6)"
+                    animationDuration={0.5}
+                    pauseBetweenAnimations={1}
+                  />
+                </span>
+              </h1>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            {isAuthenticated ? (
-              isAdmin ? (
-                <Link
-                  href="/admin"
-                  className="btn-kinetic flex items-center gap-2.5 px-8 py-4 text-sm font-bold shadow-2xl"
-                >
-                  <Shield className="w-5 h-5 text-cyan-400" />
-                  <span>Open Admin Priority Hub</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              ) : (
-                <Link
-                  href="/dashboard"
-                  className="btn-kinetic flex items-center gap-2.5 px-8 py-4 text-sm font-bold shadow-2xl"
-                >
-                  <span>Go to Student Dashboard</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              )
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/login"
-                  className="btn-kinetic flex items-center gap-2.5 px-8 py-4 text-sm font-bold shadow-2xl"
-                >
-                  <span>Student Portal Login</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/admin/login"
-                  className="flex items-center gap-2.5 px-7 py-4 rounded-2xl border border-indigo-500/30 bg-slate-900/80 font-bold text-sm text-cyan-400 hover:border-indigo-500 hover:bg-slate-900 transition-all backdrop-blur-md shadow-xl"
-                >
-                  <Shield className="w-4 h-4 text-cyan-400" />
-                  <span>Admin Staff Login</span>
+              <p className="text-base sm:text-lg text-slate-300 max-w-xl leading-relaxed font-sans">
+                Next-generation infrastructure management & automated issue resolution platform for PICT students, faculty, and campus administrators.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+                <Link href="/complaints/new">
+                  <Button size="lg" className="cyber-button-glow font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 text-base rounded-xl w-full sm:w-auto active:scale-[0.98] transition-transform">
+                    Report an Issue <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
                 </Link>
               </div>
-            )}
+            </motion.div>
+
+            {/* Right Hero Column: Interactive Campus Notice Board */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative w-full flex justify-center items-center my-auto"
+            >
+              <CampusNoticeBoard />
+            </motion.div>
           </div>
-        </motion.div>
+
+          {/* Live Cyber Metrics Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 w-full mt-16 z-10"
+          >
+            <StatCard
+              title="Complaints Resolved"
+              value={stats.resolvedComplaints ? stats.resolvedComplaints.toString() : '0'}
+              icon={CheckCircle2}
+              accentColor="emerald"
+              trend={{ label: 'Live Data', isPositive: true }}
+            />
+            <StatCard
+              title="Avg. Response Time"
+              value={stats.avgResponseHours ? stats.avgResponseHours.toString() : '4.2'}
+              valuePrefix="<"
+              valueSuffix="Hours"
+              icon={Clock}
+              accentColor="cyan"
+              trend={{ label: 'Live SLA', isPositive: true }}
+            />
+            <StatCard
+              title="Deduplication Rate"
+              value={stats.deduplicationRate ? stats.deduplicationRate.toFixed(1) : '98.4'}
+              valueSuffix="%"
+              icon={Zap}
+              accentColor="violet"
+              trend={{ label: 'Auto Triaged', isPositive: true }}
+            />
+            <StatCard
+              title="Total Tracked Issues"
+              value={stats.totalComplaints ? stats.totalComplaints.toString() : '0'}
+              icon={Building2}
+              accentColor="amber"
+              trend={{ label: 'Live Tickets', isPositive: true }}
+            />
+          </motion.div>
+        </section>
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* Explore Our Campus — OptionWheel Interactive Section      */}
+        {/* 2. HOW IT WORKS                                           */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <motion.section
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="w-full mt-28 z-10"
-        >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-semibold mb-4">
-              <GraduationCap className="w-3.5 h-3.5" />
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 border-t border-slate-900 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              How <span className="gradient-text-cyber">Campus Connect</span> Works
+            </h2>
+            <p className="text-sm text-slate-300 mt-3 max-w-lg mx-auto">
+              From issue detection to admin verification, our automated pipeline ensures rapid resolution.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 w-full text-left">
+            {[
+              {
+                step: '01',
+                title: 'Select & Locate',
+                desc: 'Pick your building (A1, A2, Hostels, Mess) and subcategory. The system automatically scans for existing active issues.',
+                icon: Building2,
+              },
+              {
+                step: '02',
+                title: 'Deduplicate & Upvote',
+                desc: 'If a similar issue exists, add your upvote to escalate its priority score instantly without creating duplicate noise.',
+                icon: Flame,
+              },
+              {
+                step: '03',
+                title: 'Resolve & Verify',
+                desc: 'Admins update real-time progress. Receive instant toast notifications and track official item handovers via QR code.',
+                icon: CheckSquare,
+              },
+            ].map((step, idx) => {
+              const Icon = step.icon;
+              return (
+                <GlowCard key={idx} className="p-8 flex flex-col justify-between space-y-6 h-full">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-4xl font-extrabold text-cyan-400/40">
+                      {step.step}
+                    </span>
+                    <div className="size-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 grid place-items-center">
+                      <Icon className="w-6 h-6" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div className="mt-auto">
+                    <h3 className="text-xl font-display font-bold text-white mb-2">{step.title}</h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{step.desc}</p>
+                  </div>
+                </GlowCard>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 3. INTERACTIVE CAMPUS EXPLORER                             */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 border-t border-slate-900 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono font-semibold mb-3">
+              <Building2 className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
               <span>Interactive Campus Explorer</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-[var(--text-primary)]">
-              Explore Our <span className="gradient-text">Campus</span>
+            <h2 className="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              Explore Our <span className="gradient-text-cyber">Campus Facilities</span>
             </h2>
-            <p className="text-sm text-[var(--text-secondary)] mt-2 max-w-lg mx-auto">
-              Scroll, drag, or click to browse through PICT's infrastructure. Every building and facility is mapped for complaint tracking.
+            <p className="text-sm text-slate-300 mt-3 max-w-lg mx-auto">
+              Scroll, drag, or click to browse through PICT&apos;s infrastructure. Every floor and facility is mapped for complaint tracking.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="relative w-full flex items-stretch rounded-3xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-secondary)]/40 backdrop-blur-xl shadow-2xl shadow-indigo-500/5" style={{ minHeight: '420px' }}>
-            {/* Left: OptionWheel */}
-            <div className="w-1/2 relative">
-              <OptionWheel
-                items={CAMPUS_FACILITIES.map(f => f.name)}
-                defaultSelected={0}
-                textColor="#6b7280"
-                activeColor="#22d3ee"
-                side="left"
-                fontSize={1.6}
-                spacing={1.5}
-                curve={0.8}
-                tilt={5}
-                blur={1.5}
-                fade={0.3}
-                smoothing={180}
-                inset={40}
-                loop
-                draggable
-                onChange={(index: number) => setSelectedFacility(index)}
-              />
+          <CampusExplorer />
+        </section>
+
+
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 4. FEATURES SECTION (REFINED INTELLIGENCE SUITE)           */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 border-t border-slate-900 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono font-semibold mb-3">
+              <Zap className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
+              <span>INTELLIGENCE SUITE</span>
             </div>
+            <h2 className="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              Core <span className="gradient-text-cyber">Platform Capabilities</span>
+            </h2>
+            <p className="text-sm text-slate-300 mt-3 max-w-lg mx-auto">
+              Engineered for seamless reporting, high data accuracy, and transparent tracking.
+            </p>
+          </motion.div>
 
-            {/* Right: Facility Detail Card */}
-            <div className="w-1/2 flex items-center justify-center p-8 relative">
-              {/* Glow behind card */}
-              <div className="absolute inset-0 bg-gradient-to-l from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedFacility}
-                  initial={{ opacity: 0, x: 30, scale: 0.96 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -20, scale: 0.96 }}
-                  transition={{ duration: 0.3 }}
-                  className="relative z-10 max-w-md space-y-5"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full text-left">
+            {[
+              {
+                icon: Layers,
+                title: 'Cascading Selectors',
+                desc: 'Select hierarchical category and location paths with smooth subcategory expansion.',
+                preview: (
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/20 text-xs font-mono text-cyan-300 flex items-center gap-1.5 overflow-hidden">
+                    <span className="text-slate-400">Academic</span> &gt; <span className="text-slate-300">A1</span> &gt; <span className="text-cyan-400 font-bold">Floor 2</span>
+                  </div>
+                ),
+              },
+              {
+                icon: Flame,
+                title: 'Dynamic Upvote Priority',
+                desc: 'Priority scores escalate dynamically as student upvotes accumulate.',
+                preview: (
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/20 text-xs font-mono flex items-center justify-between">
+                    <span className="text-amber-400 font-bold">+24 Upvotes</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Priority 8.5/10</span>
+                  </div>
+                ),
+              },
+              {
+                icon: FileSearch,
+                title: 'Duplicate Detection Engine',
+                desc: 'Auto-detect active duplicate complaints at the same location to streamline resolution.',
+                preview: (
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-violet-500/20 text-xs font-mono text-violet-300 flex items-center justify-between">
+                    <span>98% Similarity Match</span>
+                    <span className="text-emerald-400 font-semibold">Merged</span>
+                  </div>
+                ),
+              },
+              {
+                icon: Shield,
+                title: 'Domain Role Triage',
+                desc: 'Complaints automatically route to dedicated WiFi, Mess, Maintenance, or Academic admins.',
+                preview: (
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/20 text-xs font-mono flex items-center justify-between">
+                    <span className="text-emerald-400 font-bold">ADMIN_WIFI</span>
+                    <span className="text-xs text-slate-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/30">Auto Routed</span>
+                  </div>
+                ),
+              },
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <GlowCard
+                  key={idx}
+                  className="p-6 text-left space-y-4 hover:border-cyan-500/50 transition-all duration-300 flex flex-col justify-between h-full"
                 >
-                  {/* Icon + Title */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10">
-                      <FacilityIcon className="w-7 h-7 text-cyan-400" />
+                  <div className="space-y-4">
+                    <div className="size-11 shrink-0 grid place-items-center rounded-xl border bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                      <Icon className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-extrabold text-[var(--text-primary)]">
-                        {currentFacility.name}
+                      <h3 className="text-lg font-display font-bold text-white mb-1.5">
+                        {item.title}
                       </h3>
-                      {currentFacility.floors > 0 && (
-                        <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md">
-                          {currentFacility.floors} {currentFacility.floors === 1 ? 'Floor' : 'Floors'}
-                        </span>
-                      )}
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {item.desc}
+                      </p>
                     </div>
                   </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                    {currentFacility.desc}
-                  </p>
-
-                  {/* Mini Stats */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-semibold">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Mapped for Complaints</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-lg font-semibold">
-                      <Wifi className="w-3.5 h-3.5" />
-                      <span>WiFi Tracked</span>
-                    </div>
+                  <div className="pt-2 border-t border-slate-800/60">
+                    {item.preview}
                   </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                </GlowCard>
+              );
+            })}
           </div>
-        </motion.section>
+        </section>
 
-        {/* Feature Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mt-24 z-10">
-          {[
-            {
-              icon: Layers,
-              title: 'Cascading Selectors',
-              desc: 'Select hierarchical category and location paths with smooth subcategory expansion.',
-            },
-            {
-              icon: Flame,
-              title: 'Dynamic Upvote Priority',
-              desc: 'Priority scores escalate dynamically as student upvotes accumulate.',
-            },
-            {
-              icon: Zap,
-              title: 'Duplicate Detection',
-              desc: 'Auto-detect active duplicate complaints at the same location to streamline resolution.',
-            },
-            {
-              icon: ShieldCheck,
-              title: 'QR Lost & Found Claims',
-              desc: 'Secure 6-digit claim codes and QR verification for official item handover.',
-            },
-          ].map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="glass-card p-7 text-left space-y-4 hover:border-indigo-500/50 hover:scale-105 transition-all duration-300 shadow-2xl"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-cyan-400 flex items-center justify-center shadow-inner">
-                  <Icon className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  {item.desc}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 5. LIVE ACTIVITY FEED + TRACK COMPLAINT BOX               */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 border-t border-slate-900 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono font-semibold mb-3">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
+              <span>REAL-TIME TRACKING</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              Live Activity & <span className="gradient-text-cyber">Ticket Lookup</span>
+            </h2>
+            <p className="text-sm text-slate-300 mt-3 max-w-lg mx-auto">
+              Monitor active complaint resolutions as they happen or track your specific ticket ID.
+            </p>
+          </motion.div>
+
+          <LiveFeedAndTrack />
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 6. FAQ ACCORDION SECTION                                  */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 border-t border-slate-900 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-mono font-semibold mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" aria-hidden="true" />
+              <span>FREQUENTLY ASKED QUESTIONS</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              Got Questions? <span className="gradient-text-cyber">We Have Answers</span>
+            </h2>
+            <p className="text-sm text-slate-300 mt-3 max-w-lg mx-auto">
+              Everything you need to know about complaint tracking, deduplication, and lost item verification.
+            </p>
+          </motion.div>
+
+          <FAQSection />
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* 7. FINAL CTA BANNER                                       */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 z-10">
+          <CTABanner />
+        </section>
       </main>
     </div>
   );
