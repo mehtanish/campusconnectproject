@@ -17,7 +17,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@SuppressWarnings({"null", "unused"})
+@SuppressWarnings("null")
 public class DatabaseSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
