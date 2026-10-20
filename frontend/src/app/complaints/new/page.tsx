@@ -134,8 +134,9 @@ export default function FileComplaintPage() {
   const handleCopyTracking = () => {
     if (!createdComplaint) return;
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://campusconnectproject-nu.vercel.app';
-    const trackingUrl = `${baseUrl}/complaints/${createdComplaint.id}`;
-    const copyText = `CampusConnect PICT Complaint #${createdComplaint.id}: ${createdComplaint.title}\nStatus: ${createdComplaint.status}\nTracking: ${trackingUrl}`;
+    const refCode = createdComplaint.referenceId || createdComplaint.id;
+    const trackingUrl = `${baseUrl}/complaints?id=${refCode}`;
+    const copyText = `CampusConnect PICT Complaint #${refCode}: ${createdComplaint.title}\nStatus: ${createdComplaint.status}\nTracking: ${trackingUrl}`;
     navigator.clipboard.writeText(copyText);
     setHasCopied(true);
     toast.success('Tracking reference and details copied to clipboard!');
@@ -586,7 +587,7 @@ export default function FileComplaintPage() {
                   <div className="space-y-1">
                     <span className="text-[10px] font-mono text-slate-400 uppercase">Complaint Reference</span>
                     <div className="font-mono text-base font-bold text-cyan-300 flex items-center justify-between">
-                      <span>#{createdComplaint.id}</span>
+                      <span>#{createdComplaint.referenceId || createdComplaint.id}</span>
                       <span className="text-xs text-slate-400 font-sans font-normal">{locationPath}</span>
                     </div>
                   </div>
@@ -606,7 +607,7 @@ export default function FileComplaintPage() {
                     {/* QR Code */}
                     <div className="p-2 bg-white rounded-xl shadow-lg" title="Scan to verify complaint ticket">
                       <QRCodeSVG
-                        value={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://campusconnectproject-nu.vercel.app'}/complaints/${createdComplaint.id}`}
+                        value={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://campusconnectproject-nu.vercel.app'}/complaints?id=${createdComplaint.referenceId || createdComplaint.id}`}
                         size={64}
                         aria-label="Official complaint verification QR code"
                         role="img"

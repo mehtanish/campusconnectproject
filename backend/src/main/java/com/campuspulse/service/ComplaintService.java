@@ -30,10 +30,12 @@ public class ComplaintService {
     private final UpvoteRepository upvoteRepository;
     private final IssueTypeRepository issueTypeRepository;
     private final IssueTypeService issueTypeService;
+    private final com.campuspulse.repository.CommentRepository commentRepository;
+    private final CommentService commentService;
 
     private static final double BASE_URGENCY = 1.0;
     private static final List<ComplaintStatus> ACTIVE_STATUSES = List.of(
-            ComplaintStatus.PENDING, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
+            ComplaintStatus.PENDING, ComplaintStatus.ACCEPTED, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
 
     @Transactional
     public ComplaintResponse createComplaint(ComplaintRequest request, User student) {
@@ -52,7 +54,10 @@ public class ComplaintService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
+        String referenceId = generateNextReferenceId();
+
         Complaint complaint = Complaint.builder()
+                .referenceId(referenceId)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(category)
@@ -180,6 +185,43 @@ public class ComplaintService {
                 complaint.getUpdatedAt());
     }
 
+    @Transactional
+    public void deleteComplaint(UUID complaintId, User user) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Complaint not found with id: " + complaintId));
+
+        if (user.getRole() == Role.STUDENT) {
+            if (!complaint.getStudent().getId().equals(user.getId())) {
+                throw new AccessDeniedException("You are not authorized to delete another student's complaint");
+            }
+            if (complaint.getStatus() != ComplaintStatus.PENDING) {
+                throw new IllegalStateException("Complaints can only be deleted while status is PENDING");
+            }
+        } else {
+            if (!isAuthorizedAdminForCategory(complaint.getCategory(), user.getRole())) {
+                throw new AccessDeniedException("You are not authorized to delete complaints outside your domain");
+            }
+        }
+
+        commentRepository.deleteByComplaintId(complaintId);
+        upvoteRepository.deleteByComplaintId(complaintId);
+        complaintRepository.delete(complaint);
+    }
+
+    private boolean isAuthorizedAdminForCategory(Category category, Role adminRole) {
+        if (adminRole == Role.SUPER_ADMIN) {
+            return true;
+        }
+        Category current = category;
+        while (current != null) {
+            if (current.getAdminRole() == adminRole) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
     /**
      * Builds the complaint response, computing all three priority fields in sync:
      * upvoteCount, priorityScore, and highPriority (derived: upvoteCount >= 15).
@@ -200,8 +242,15 @@ public class ComplaintService {
                 .map(it -> it.getDisplayLabel())
                 .orElse(complaint.getIssueTag()); // fallback for legacy data
 
+        List<com.campuspulse.dto.comment.CommentResponse> comments = commentRepository
+                .findByComplaintIdOrderByCreatedAtAsc(complaint.getId())
+                .stream()
+                .map(commentService::toResponse)
+                .collect(Collectors.toList());
+
         return ComplaintResponse.builder()
                 .id(complaint.getId())
+                .referenceId(complaint.getReferenceId())
                 .title(complaint.getTitle())
                 .description(complaint.getDescription())
                 .categoryId(complaint.getCategory().getId())
@@ -218,8 +267,145 @@ public class ComplaintService {
                 .highPriority(upvoteCount >= 15)   // derived — never stored
                 .hasUpvoted(hasUpvoted)
                 .upvotedAt(upvotedAt)
+                .comments(comments)
                 .createdAt(complaint.getCreatedAt())
                 .updatedAt(complaint.getUpdatedAt())
                 .build();
+    }
+
+    @Transactional
+    public synchronized String generateNextReferenceId() {
+        List<String> existing = complaintRepository.findAllReferenceIds();
+        int maxNum = 1000;
+        for (String ref : existing) {
+            if (ref != null && ref.startsWith("CMP-") && ref.length() == 8) {
+                try {
+                    int num = Integer.parseInt(ref.substring(4));
+                    if (num > maxNum) {
+                        maxNum = num;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        int nextNum = maxNum + 1;
+        if (nextNum <= 9999) {
+            return String.format("CMP-%04d", nextNum);
+        } else {
+            String suffix;
+            do {
+                suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
+            } while (complaintRepository.existsByReferenceIdIgnoreCase("CMP-" + suffix));
+            return "CMP-" + suffix;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ComplaintActivityResponse> getLiveActivity() {
+        return complaintRepository.findTop15ByOrderByUpdatedAtDesc()
+                .stream()
+                .map(this::toActivityResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ComplaintTrackResponse trackComplaint(String code) {
+        if (code == null || code.isBlank()) {
+            throw new com.campuspulse.exception.ResourceNotFoundException("Reference code must not be empty");
+        }
+        String clean = code.trim().replace("#", "");
+        Complaint complaint = complaintRepository.findByReferenceIdIgnoreCase(clean)
+                .orElseGet(() -> {
+                    try {
+                        UUID uuid = UUID.fromString(clean);
+                        return complaintRepository.findById(uuid).orElse(null);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                });
+
+        if (complaint == null) {
+            throw new com.campuspulse.exception.ResourceNotFoundException(
+                    "Complaint ticket with reference code '" + code + "' was not found.");
+        }
+
+        return toTrackResponse(complaint);
+    }
+
+    public ComplaintActivityResponse toActivityResponse(Complaint complaint) {
+        String building = extractBuilding(complaint.getLocationPath(),
+                complaint.getCategory() != null ? complaint.getCategory().getName() : null);
+
+        String refCode = complaint.getReferenceId();
+        if (refCode == null || refCode.isBlank()) {
+            refCode = "CMP-" + complaint.getId().toString().replace("-", "").substring(0, 4).toUpperCase();
+        }
+
+        return ComplaintActivityResponse.builder()
+                .id(refCode)
+                .referenceId(refCode)
+                .complaintId(complaint.getId())
+                .title(complaint.getTitle())
+                .building(building)
+                .locationPath(complaint.getLocationPath())
+                .status(complaint.getStatus())
+                .upvoteCount(complaint.getUpvoteCount())
+                .createdAt(complaint.getCreatedAt())
+                .updatedAt(complaint.getUpdatedAt())
+                .build();
+    }
+
+    public ComplaintTrackResponse toTrackResponse(Complaint complaint) {
+        String building = extractBuilding(complaint.getLocationPath(),
+                complaint.getCategory() != null ? complaint.getCategory().getName() : null);
+
+        String issueTagLabel = issueTypeRepository.findByStableKey(complaint.getIssueTag())
+                .map(it -> it.getDisplayLabel())
+                .orElse(complaint.getIssueTag());
+
+        String refCode = complaint.getReferenceId();
+        if (refCode == null || refCode.isBlank()) {
+            refCode = "CMP-" + complaint.getId().toString().replace("-", "").substring(0, 4).toUpperCase();
+        }
+
+        return ComplaintTrackResponse.builder()
+                .id(complaint.getId())
+                .referenceId(refCode)
+                .title(complaint.getTitle())
+                .description(complaint.getDescription())
+                .building(building)
+                .locationPath(complaint.getLocationPath())
+                .categoryName(complaint.getCategory() != null ? complaint.getCategory().getName() : "General")
+                .issueTag(complaint.getIssueTag())
+                .issueTagLabel(issueTagLabel)
+                .status(complaint.getStatus())
+                .adminNote(complaint.getAdminNote())
+                .upvoteCount(complaint.getUpvoteCount())
+                .priorityScore(complaint.getPriorityScore())
+                .createdAt(complaint.getCreatedAt())
+                .updatedAt(complaint.getUpdatedAt())
+                .build();
+    }
+
+    public static String extractBuilding(String locationPath, String categoryName) {
+        if (locationPath != null && !locationPath.isBlank()) {
+            String[] parts = locationPath.split(">");
+            if (parts.length > 1) {
+                String first = parts[0].trim().toLowerCase();
+                if (first.contains("block") || first.contains("hostel") || first.contains("zone")) {
+                    String candidate = parts[1].trim();
+                    if (!candidate.isEmpty()) return candidate;
+                } else {
+                    String candidate = parts[0].trim();
+                    if (!candidate.isEmpty()) return candidate;
+                }
+            } else if (parts.length == 1) {
+                String candidate = parts[0].trim();
+                if (!candidate.isEmpty()) return candidate;
+            }
+        }
+        if (categoryName != null && !categoryName.isBlank()) {
+            return categoryName;
+        }
+        return "Campus Facility";
     }
 }

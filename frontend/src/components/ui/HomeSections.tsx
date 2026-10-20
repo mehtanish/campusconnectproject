@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './GlowCard';
 import { Button } from './Button';
+import api from '@/lib/api';
+import { ComplaintActivityResponse, ComplaintTrackResponse, ComplaintStatus } from '@/types';
 import {
   Activity,
   Search,
@@ -19,9 +20,34 @@ import {
   Zap,
   Lock,
   Users,
+  Loader2,
+  AlertCircle,
+  ExternalLink,
+  RefreshCw,
+  ThumbsUp,
 } from 'lucide-react';
 
 export { Footer } from '@/components/layout/Footer';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Relative time helper ("12m ago" style)
+// ─────────────────────────────────────────────────────────────────────────────
+export function formatTimeAgo(dateString?: string | null): string {
+  if (!dateString) return 'just now';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSec = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
+
+  if (diffSec < 60) return `${Math.max(1, diffSec)}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  const diffWeeks = Math.floor(diffDays / 7);
+  return `${diffWeeks}w ago`;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Live Activity Feed & Track Complaint Box Component
@@ -30,48 +56,124 @@ export interface ActivityItem {
   id: string;
   title: string;
   building: string;
-  status: 'Pending' | 'In Progress' | 'Resolved';
+  status: ComplaintStatus | string;
   timeAgo: string;
 }
 
-const SAMPLE_ACTIVITIES: ActivityItem[] = [
-  { id: 'CMP-1048', title: 'Water purifier filter replacement in Boys Hostel Floor 2', building: 'Boys Hostel', status: 'Resolved', timeAgo: '4m ago' },
-  { id: 'CMP-1047', title: 'WiFi Access Point AP-03 offline in Digital Library', building: 'Digital Library', status: 'In Progress', timeAgo: '12m ago' },
-  { id: 'CMP-1046', title: 'Projector HDMI port replacement in Seminar Hall A1', building: 'A1 Building', status: 'Pending', timeAgo: '28m ago' },
-  { id: 'CMP-1044', title: 'Main Canteen exhaust fan maintenance', building: 'Campus Canteen', status: 'In Progress', timeAgo: '1h ago' },
-  { id: 'CMP-1043', title: 'Corridor LED light fitting repair on Floor 3', building: 'A2 Building', status: 'Resolved', timeAgo: '2h ago' },
-];
-
 export function LiveFeedAndTrack() {
-  const router = useRouter();
-  const [trackId, setTrackId] = useState('');
-  const [searchStatus, setSearchStatus] = useState<string | null>(null);
+  // Live Activity Stream State
+  const [activities, setActivities] = useState<ComplaintActivityResponse[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleTrackSubmit = (e: React.FormEvent) => {
+  // Track Complaint Status State
+  const [trackId, setTrackId] = useState('');
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupResult, setLookupResult] = useState<ComplaintTrackResponse | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+
+  // Fetch Live Activity from Real Complaints table
+  const fetchActivities = useCallback(async (isSilent = false) => {
+    if (isSilent) setIsRefreshing(true);
+
+    try {
+      const res = await api.get<ComplaintActivityResponse[]>('/api/public/complaints/activity');
+      if (Array.isArray(res.data)) {
+        setActivities(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch live complaints stream', err);
+    } finally {
+      setIsLoadingActivities(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Poll real-time activity stream every 30 seconds
+  useEffect(() => {
+    let isMounted = true;
+    Promise.resolve().then(() => {
+      if (isMounted) fetchActivities();
+    });
+    const interval = setInterval(() => {
+      if (isMounted) fetchActivities(true);
+    }, 30000); // 30 seconds
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [fetchActivities]);
+
+  // Real Track Complaint Lookup Handler
+  const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trackId.trim()) return;
-    setSearchStatus(`Found record for ticket ${trackId.toUpperCase()}. Redirecting to tracking...`);
-    setTimeout(() => {
-      router.push(`/complaints?id=${encodeURIComponent(trackId.trim())}`);
-    }, 1000);
+    const raw = trackId.trim();
+    if (!raw) return;
+
+    // Normalize: strip leading '#' and convert to uppercase
+    const cleanRef = raw.replace(/^#/, '').toUpperCase();
+
+    // Verify format: expect 8-character CMP-XXXX code or UUID
+    if (cleanRef.length !== 8 && cleanRef.length !== 36) {
+      setLookupError('Reference code must be 8 characters in format CMP-XXXX (e.g. CMP-1048)');
+      setLookupResult(null);
+      return;
+    }
+
+    try {
+      setIsLookingUp(true);
+      setLookupError(null);
+      setLookupResult(null);
+
+      const res = await api.get<ComplaintTrackResponse>(
+        `/api/public/complaints/track/${encodeURIComponent(cleanRef)}`
+      );
+      setLookupResult(res.data);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      const msg =
+        errorObj.response?.data?.error ||
+        `No complaint found with ticket reference "${cleanRef}". Please verify your 8-character code.`;
+      setLookupError(msg);
+      setLookupResult(null);
+    } finally {
+      setIsLookingUp(false);
+    }
   };
 
-  const getStatusBadge = (status: ActivityItem['status']) => {
-    switch (status) {
-      case 'Resolved':
+  const getStatusBadge = (status: ComplaintStatus | string) => {
+    const norm = (status || '').toUpperCase();
+    switch (norm) {
+      case 'RESOLVED':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
             <CheckCircle2 className="w-3 h-3 text-emerald-400" aria-hidden="true" />
             Resolved
           </span>
         );
-      case 'In Progress':
+      case 'IN_PROGRESS':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
             <Clock className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '4s' }} aria-hidden="true" />
             In Progress
           </span>
         );
+      case 'ACCEPTED':
+      case 'APPROVED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-blue-500/15 border border-blue-500/30 text-blue-300">
+            <ShieldCheck className="w-3 h-3 text-blue-400" aria-hidden="true" />
+            Accepted
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-300">
+            <AlertCircle className="w-3 h-3 text-rose-400" aria-hidden="true" />
+            Rejected
+          </span>
+        );
+      case 'PENDING':
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300">
@@ -84,7 +186,7 @@ export function LiveFeedAndTrack() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-stretch">
-      {/* Left Column: Live Activity Feed (7 cols) */}
+      {/* Left Column: Real Live Activity Stream (7 cols) */}
       <GlowCard className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between text-left relative overflow-hidden">
         <div>
           <div className="flex items-center justify-between mb-6 border-b border-slate-800/80 pb-4">
@@ -106,37 +208,65 @@ export function LiveFeedAndTrack() {
             </div>
           </div>
 
-          {/* Activity Feed Items */}
+          {/* Activity Feed Items from Real DB */}
           <div className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
-            {SAMPLE_ACTIVITIES.map((act) => (
-              <motion.div
-                key={act.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-cyan-400">{act.id}</span>
-                    <span className="text-xs text-slate-400">•</span>
-                    <span className="text-xs font-mono text-slate-300">{act.building}</span>
+            {isLoadingActivities ? (
+              <div className="space-y-3 py-4">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800 animate-pulse space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 bg-slate-800 rounded w-28" />
+                      <div className="h-4 bg-slate-800 rounded w-16" />
+                    </div>
+                    <div className="h-4 bg-slate-800 rounded w-3/4" />
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-white leading-snug">
-                    {act.title}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                  {getStatusBadge(act.status)}
-                  <span className="text-xs text-slate-400 font-mono">{act.timeAgo}</span>
-                </div>
-              </motion.div>
-            ))}
+                ))}
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-slate-900/30 border border-slate-800 space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <p className="text-sm font-semibold text-white">All Campus Systems Nominal</p>
+                <p className="text-xs text-slate-400">No active complaints logged in the last period.</p>
+              </div>
+            ) : (
+              activities.map((act) => {
+                const refCode = act.referenceId || act.id;
+                return (
+                  <motion.div
+                    key={act.complaintId || refCode}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-cyan-400">{refCode}</span>
+                        <span className="text-xs text-slate-400">•</span>
+                        <span className="text-xs font-mono text-slate-300">{act.building || 'Campus Facilities'}</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-medium text-white leading-snug">
+                        {act.title}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                      {getStatusBadge(act.status)}
+                      <span className="text-xs text-slate-400 font-mono" title={act.updatedAt || act.createdAt}>
+                        {formatTimeAgo(act.updatedAt || act.createdAt)}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
 
         <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-          <span>Updates auto-refresh every 30 seconds</span>
-          <Link href="/complaints" className="text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1">
+          <div className="flex items-center gap-1.5 font-mono">
+            <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Updates auto-refresh every 30 seconds</span>
+          </div>
+          <Link href="/complaints/upvoted" className="text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1">
             View All Complaints <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -166,23 +296,90 @@ export function LiveFeedAndTrack() {
                   id="complaint-id-input"
                   type="text"
                   value={trackId}
-                  onChange={(e) => setTrackId(e.target.value)}
+                  onChange={(e) => {
+                    setTrackId(e.target.value);
+                    if (lookupError) setLookupError(null);
+                  }}
                   placeholder="e.g. CMP-1048"
+                  maxLength={36}
                   className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono text-sm uppercase tracking-wider"
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono text-xs font-bold transition-all"
+                  disabled={isLookingUp}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-bold transition-all flex items-center gap-1.5"
                 >
-                  Lookup
+                  {isLookingUp ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Checking...</span>
+                    </>
+                  ) : (
+                    <span>Lookup</span>
+                  )}
                 </button>
               </div>
             </div>
 
-            {searchStatus && (
-              <p className="text-xs font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 p-2.5 rounded-lg">
-                {searchStatus}
-              </p>
+            {/* Validation or Lookup Error */}
+            {lookupError && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs font-mono text-rose-300 bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl flex items-start gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{lookupError}</span>
+              </motion.div>
+            )}
+
+            {/* Real Complaint Status Card Display */}
+            {lookupResult && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-xl space-y-3"
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <span className="font-mono text-sm font-bold text-cyan-400">
+                    #{lookupResult.referenceId || lookupResult.id}
+                  </span>
+                  <div>{getStatusBadge(lookupResult.status)}</div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-white leading-snug">{lookupResult.title}</h4>
+                  <p className="text-xs text-slate-400 mt-1 font-mono">
+                    📍 {lookupResult.locationPath}
+                  </p>
+                </div>
+
+                {lookupResult.adminNote && (
+                  <div className="p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-800/40 text-xs text-cyan-200">
+                    <span className="font-mono font-bold text-[10px] uppercase text-cyan-400 block mb-0.5">
+                      Admin Update
+                    </span>
+                    {lookupResult.adminNote}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400 font-mono">
+                  <span className="flex items-center gap-1 text-slate-300">
+                    <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" /> {lookupResult.upvoteCount} upvotes
+                  </span>
+                  <span>Updated {formatTimeAgo(lookupResult.updatedAt || lookupResult.createdAt)}</span>
+                </div>
+
+                <div className="pt-1">
+                  <Link
+                    href={`/complaints?id=${encodeURIComponent(lookupResult.referenceId || lookupResult.id)}`}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-semibold transition-all"
+                  >
+                    <span>View Ticket Details</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </motion.div>
             )}
           </form>
         </div>

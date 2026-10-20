@@ -9,6 +9,8 @@ const badgeVariants = cva(
       status: {
         PENDING:
           'bg-amber-500/10 text-amber-300 border-amber-500/30 shadow-sm shadow-amber-500/10',
+        ACCEPTED:
+          'bg-cyan-500/10 text-cyan-300 border-cyan-500/30 shadow-sm shadow-cyan-500/10',
         APPROVED:
           'bg-cyan-500/10 text-cyan-300 border-cyan-500/30 shadow-sm shadow-cyan-500/10',
         IN_PROGRESS:
@@ -42,6 +44,7 @@ export function Badge({ className, status, showPulseDot = true, children, ...pro
     switch (st) {
       case 'PENDING':
         return 'bg-amber-400';
+      case 'ACCEPTED':
       case 'APPROVED':
       case 'IN_PROGRESS':
         return 'bg-cyan-400';

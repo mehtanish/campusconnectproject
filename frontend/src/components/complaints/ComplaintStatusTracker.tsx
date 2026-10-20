@@ -11,7 +11,7 @@ interface ComplaintStatusTrackerProps {
 
 const STEPS: { status: ComplaintStatus; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { status: 'PENDING', label: 'Pending', icon: Clock },
-  { status: 'APPROVED', label: 'Approved', icon: ShieldCheck },
+  { status: 'ACCEPTED', label: 'Accepted', icon: ShieldCheck },
   { status: 'IN_PROGRESS', label: 'In Progress', icon: RefreshCw },
   { status: 'RESOLVED', label: 'Resolved', icon: CheckCircle2 },
 ];
@@ -26,7 +26,7 @@ export function ComplaintStatusTracker({ currentStatus }: ComplaintStatusTracker
     );
   }
 
-  const currentIndex = STEPS.findIndex((s) => s.status === currentStatus);
+  const currentIndex = currentStatus === 'APPROVED' ? 1 : STEPS.findIndex((s) => s.status === currentStatus);
 
   return (
     <div className="w-full py-3">

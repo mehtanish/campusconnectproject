@@ -13,6 +13,7 @@ export type Role =
 
 export type ComplaintStatus =
   | 'PENDING'
+  | 'ACCEPTED'
   | 'APPROVED'
   | 'IN_PROGRESS'
   | 'RESOLVED'
@@ -29,11 +30,23 @@ export interface AdminStats {
 // ---- Status Config ----
 export const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgColor: string; dotColor: string }> = {
   PENDING: { label: 'Pending', color: 'text-slate-400', bgColor: 'bg-slate-500/10', dotColor: 'bg-slate-400' },
-  APPROVED: { label: 'Approved', color: 'text-blue-400', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-400' },
+  ACCEPTED: { label: 'Accepted', color: 'text-blue-400', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-400' },
+  APPROVED: { label: 'Accepted', color: 'text-blue-400', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-400' },
   IN_PROGRESS: { label: 'In Progress', color: 'text-amber-400', bgColor: 'bg-amber-500/10', dotColor: 'bg-amber-400' },
   RESOLVED: { label: 'Resolved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', dotColor: 'bg-emerald-400' },
   REJECTED: { label: 'Rejected', color: 'text-rose-400', bgColor: 'bg-rose-500/10', dotColor: 'bg-rose-400' },
 };
+
+// ---- Comments ----
+export interface CommentResponse {
+  id: string;
+  complaintId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: Role;
+  content: string;
+  createdAt: string;
+}
 
 // ---- Auth ----
 export interface LoginRequest {
@@ -96,6 +109,7 @@ export interface ComplaintRequest {
 
 export interface ComplaintResponse {
   id: string;
+  referenceId?: string;
   title: string;
   description: string;
   categoryId: string;
@@ -115,6 +129,7 @@ export interface ComplaintResponse {
   highPriority: boolean;
   hasUpvoted: boolean;
   upvotedAt?: string | null;
+  comments?: CommentResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -142,5 +157,36 @@ export interface UpvoteResponse {
   /** True when upvoteCount >= 15 */
   highPriority: boolean;
   hasUpvoted: boolean;
+}
+
+export interface ComplaintActivityResponse {
+  id: string;
+  referenceId: string;
+  complaintId: string;
+  title: string;
+  building: string;
+  locationPath: string;
+  status: ComplaintStatus;
+  upvoteCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComplaintTrackResponse {
+  id: string;
+  referenceId: string;
+  title: string;
+  description: string;
+  building: string;
+  locationPath: string;
+  categoryName: string;
+  issueTag: string;
+  issueTagLabel: string;
+  status: ComplaintStatus;
+  adminNote: string | null;
+  upvoteCount: number;
+  priorityScore: number;
+  createdAt: string;
+  updatedAt: string;
 }
 

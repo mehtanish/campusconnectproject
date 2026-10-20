@@ -182,30 +182,37 @@ export default function AdminAnalyticsHub() {
           <React.Fragment>
             {/* Cyber Stat Cards */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-28 w-full" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                   title="Total Complaints"
                   value={stats?.totalComplaints ?? 0}
-                  trend={{ value: '12%', isPositive: true }}
+                  trend={{ value: 'Live', isPositive: true }}
                   icon={<BarChart2 className="w-5 h-5 text-cyan-400" aria-hidden="true" />}
                   glowColor="rgba(6, 182, 212, 0.2)"
                 />
                 <StatCard
-                  title="Pending Action"
+                  title="New (Pending)"
                   value={stats?.pendingComplaints ?? 0}
                   icon={<Clock className="w-5 h-5 text-amber-400" aria-hidden="true" />}
                   glowColor="rgba(245, 158, 11, 0.2)"
                 />
                 <StatCard
+                  title="In Progress"
+                  value={stats?.inProgressComplaints ?? 0}
+                  icon={<RotateCw className="w-5 h-5 text-cyan-400 animate-spin-slow" aria-hidden="true" />}
+                  glowColor="rgba(6, 182, 212, 0.2)"
+                />
+                <StatCard
                   title="Resolved Issues"
                   value={stats?.resolvedComplaints ?? 0}
-                  trend={{ value: '98.4%', isPositive: true }}
+                  trend={{ value: 'Closed', isPositive: true }}
                   icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" aria-hidden="true" />}
                   glowColor="rgba(16, 185, 129, 0.2)"
                 />
@@ -276,7 +283,7 @@ export default function AdminAnalyticsHub() {
             {/* Complaint Priority Queue */}
             <div id="queue" className="space-y-4 text-left">
               <h2 className="text-lg font-display font-bold text-white">
-                Domain Priority Queue
+                Complaint Management Workflow
               </h2>
 
               {isLoading ? (

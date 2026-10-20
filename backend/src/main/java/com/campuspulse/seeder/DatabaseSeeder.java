@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 
@@ -25,6 +26,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final ComplaintRepository complaintRepository;
     private final IssueTypeRepository issueTypeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.campuspulse.service.ComplaintService complaintService;
 
     @Value("${app.seed.demo-data:true}")
     private boolean seedDemoData;
@@ -50,7 +52,9 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         if (userRepository.count() > 0) {
-            log.info("Database already seeded, skipping...");
+            log.info("Database already seeded, skipping user creation...");
+            backfillReferenceIds();
+            ensureSampleComplaints();
             return;
         }
 
@@ -222,13 +226,85 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .locationPath("Campus Hostels > Boys Hostel > Floor 1 > Floor 1 - Rooms > Room 105")
                 .issueTag("router-hardware")
                 .student(student2)
-                .status(ComplaintStatus.APPROVED)
+                .status(ComplaintStatus.ACCEPTED)
                 .upvoteCount(6)
                 .priorityScore(6 * 1.5 + 1.0)
                 .build());
 
             log.info("✅ Seeded sample complaints");
+            ensureSampleComplaints();
         }
+    }
+
+    private void backfillReferenceIds() {
+        List<Complaint> complaintsWithoutRef = complaintRepository.findAll().stream()
+                .filter(c -> c.getReferenceId() == null || c.getReferenceId().isBlank())
+                .collect(Collectors.toList());
+
+        if (!complaintsWithoutRef.isEmpty()) {
+            log.info("🔧 Backfilling reference IDs for {} existing complaints...", complaintsWithoutRef.size());
+            for (Complaint c : complaintsWithoutRef) {
+                c.setReferenceId(complaintService.generateNextReferenceId());
+                complaintRepository.save(c);
+            }
+            log.info("✅ Reference IDs backfilled successfully.");
+        }
+    }
+
+    private void ensureSampleComplaints() {
+        if (!seedDemoData) return;
+
+        User student = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.STUDENT)
+                .findFirst().orElse(null);
+        if (student == null) return;
+
+        createSampleIfNotExists("CMP-1048", "Water purifier filter replacement in Boys Hostel Floor 2",
+                "Water purifier in Floor 2 Boys Hostel dispensing turbid water. Filter requires immediate maintenance replacement.",
+                "Campus Hostels > Boys Hostel > Floor 2", "plumbing-leak", student, ComplaintStatus.RESOLVED, 18, "Replacement filter installed and water tested.");
+
+        createSampleIfNotExists("CMP-1047", "WiFi Access Point AP-03 offline in Digital Library",
+                "Access Point AP-03 in Digital Library 2nd floor silent / non-responsive. Students unable to connect.",
+                "Academic Blocks > Digital Library > Floor 2", "no-connectivity", student, ComplaintStatus.IN_PROGRESS, 12, "IT team dispatched to diagnose PoE switch port.");
+
+        createSampleIfNotExists("CMP-1046", "Projector HDMI port replacement in Seminar Hall A1",
+                "Seminar Hall A1 podium HDMI female connector pins bent, failing video sync with laptops.",
+                "Academic Blocks > A1 Building > Seminar Hall", "router-hardware", student, ComplaintStatus.PENDING, 5, null);
+
+        createSampleIfNotExists("CMP-1044", "Main Canteen exhaust fan maintenance",
+                "High squealing noise from exhaust unit 2 in Canteen cooking bay.",
+                "Campus Facilities > Campus Canteen > Kitchen", "unclean-hygiene", student, ComplaintStatus.IN_PROGRESS, 8, "Maintenance vendor scheduled for 3 PM.");
+
+        createSampleIfNotExists("CMP-1043", "Corridor LED light fitting repair on Floor 3",
+                "Light fitting outside Lab 304 flickering intermittently.",
+                "Academic Blocks > A2 Building > Floor 3", "router-hardware", student, ComplaintStatus.RESOLVED, 4, "LED driver replaced.");
+    }
+
+    private void createSampleIfNotExists(String refId, String title, String desc, String location,
+                                         String issueTag, User student, ComplaintStatus status,
+                                         int upvotes, String adminNote) {
+        if (complaintRepository.existsByReferenceIdIgnoreCase(refId)) {
+            return;
+        }
+        Category cat = categoryRepository.findAll().stream()
+                .filter(c -> location.contains(c.getName()))
+                .findFirst()
+                .orElse(categoryRepository.findAll().stream().findFirst().orElse(null));
+        if (cat == null) return;
+
+        complaintRepository.save(Complaint.builder()
+                .referenceId(refId)
+                .title(title)
+                .description(desc)
+                .category(cat)
+                .locationPath(location)
+                .issueTag(issueTag)
+                .student(student)
+                .status(status)
+                .upvoteCount(upvotes)
+                .priorityScore(upvotes * 1.5 + 1.0)
+                .adminNote(adminNote)
+                .build());
     }
 
     private void seedIssueTypes() {

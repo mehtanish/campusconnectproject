@@ -1,5 +1,6 @@
 package com.campuspulse.dto.complaint;
 
+import com.campuspulse.dto.comment.CommentResponse;
 import com.campuspulse.model.enums.ComplaintStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Builder
 public class ComplaintResponse {
     private UUID id;
+    private String referenceId;
     private String title;
     private String description;
     private UUID categoryId;
@@ -34,6 +37,12 @@ public class ComplaintResponse {
     private boolean highPriority;
     private boolean hasUpvoted;
     private LocalDateTime upvotedAt;
+    @Builder.Default
+    private List<CommentResponse> comments = java.util.Collections.emptyList();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getReferenceCode() {
+        return referenceId;
+    }
 }

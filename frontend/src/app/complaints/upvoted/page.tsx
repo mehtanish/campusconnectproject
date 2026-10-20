@@ -50,13 +50,13 @@ export default function UpvotedComplaintsPage() {
 
   const totalUpvoted = upvotedComplaints.length;
   const activeUpvoted = upvotedComplaints.filter(
-    (c) => c.status === 'PENDING' || c.status === 'APPROVED' || c.status === 'IN_PROGRESS'
+    (c) => c.status === 'PENDING' || c.status === 'ACCEPTED' || c.status === 'APPROVED' || c.status === 'IN_PROGRESS'
   ).length;
   const resolvedUpvoted = upvotedComplaints.filter((c) => c.status === 'RESOLVED').length;
 
   const filteredComplaints = upvotedComplaints.filter((item) => {
     if (filter === 'ACTIVE') {
-      return item.status === 'PENDING' || item.status === 'APPROVED' || item.status === 'IN_PROGRESS';
+      return item.status === 'PENDING' || item.status === 'ACCEPTED' || item.status === 'APPROVED' || item.status === 'IN_PROGRESS';
     }
     if (filter === 'RESOLVED') {
       return item.status === 'RESOLVED';

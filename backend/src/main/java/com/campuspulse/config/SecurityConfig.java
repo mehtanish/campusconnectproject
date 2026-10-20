@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issue-types/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/complaints/track/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
 
                 // Admin endpoints — any ADMIN_* or SUPER_ADMIN role

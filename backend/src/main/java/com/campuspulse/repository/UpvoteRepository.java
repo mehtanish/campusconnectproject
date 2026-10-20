@@ -25,4 +25,8 @@ public interface UpvoteRepository extends JpaRepository<Upvote, UUID> {
     List<Upvote> findByComplaintIdWithStudent(@Param("complaintId") UUID complaintId);
 
     java.util.Optional<Upvote> findByComplaintIdAndStudentId(UUID complaintId, UUID studentId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Upvote u WHERE u.complaint.id = :complaintId")
+    void deleteByComplaintId(@Param("complaintId") UUID complaintId);
 }

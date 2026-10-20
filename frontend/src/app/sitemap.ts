@@ -10,6 +10,7 @@ const PUBLIC_ROUTES: RouteConfig[] = [
   { path: '', changeFrequency: 'daily', priority: 1.0 },
   { path: '/complaints/new', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/complaints/upvoted', changeFrequency: 'daily', priority: 0.8 },
+  { path: '/complaints', changeFrequency: 'daily', priority: 0.8 },
   { path: '/legal', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/login', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/register', changeFrequency: 'monthly', priority: 0.6 },

@@ -25,6 +25,7 @@ public class AdminController {
 
     private final ComplaintService complaintService;
     private final ComplaintRepository complaintRepository;
+    private final com.campuspulse.service.CommentService commentService;
 
     /** Get complaints filtered by admin's domain role */
     @GetMapping("/complaints")
@@ -43,6 +44,35 @@ public class AdminController {
             @AuthenticationPrincipal User admin) {
         return ResponseEntity.ok(complaintService.getAdminComplaintDetails(id, admin.getRole()));
     }
+
+    /** Delete complaint as admin */
+    @DeleteMapping("/complaints/{id}")
+    public ResponseEntity<Map<String, String>> deleteComplaint(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User admin) {
+        complaintService.deleteComplaint(id, admin);
+        return ResponseEntity.ok(Map.of("message", "Complaint deleted successfully by admin"));
+    }
+
+    /** Add comment on complaint */
+    @PostMapping("/complaints/{id}/comments")
+    public ResponseEntity<com.campuspulse.dto.comment.CommentResponse> addComment(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.campuspulse.dto.comment.CommentRequest request,
+            @AuthenticationPrincipal User admin) {
+        return ResponseEntity.ok(commentService.addComment(id, request, admin));
+    }
+
+    /** Delete comment (moderation) */
+    @DeleteMapping("/complaints/{id}/comments/{commentId}")
+    public ResponseEntity<Map<String, String>> deleteComment(
+            @PathVariable UUID id,
+            @PathVariable UUID commentId,
+            @AuthenticationPrincipal User admin) {
+        commentService.deleteComment(commentId, admin);
+        return ResponseEntity.ok(Map.of("message", "Comment deleted successfully"));
+    }
+
     /** Update complaint status with admin note */
     @PatchMapping("/complaints/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(

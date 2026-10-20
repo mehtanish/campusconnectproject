@@ -68,4 +68,18 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
 
     /** All complaints ordered by priority (admin view) */
     List<Complaint> findAllByOrderByPriorityScoreDesc();
+
+    /** Find complaint by 8-character reference ID (e.g. CMP-1048), case-insensitive */
+    java.util.Optional<Complaint> findByReferenceIdIgnoreCase(String referenceId);
+
+    /** Check if reference ID exists */
+    boolean existsByReferenceIdIgnoreCase(String referenceId);
+
+    /** Fetch top 15 most recently updated or created complaints for live activity stream */
+    @EntityGraph(attributePaths = {"category"})
+    List<Complaint> findTop15ByOrderByUpdatedAtDesc();
+
+    /** Retrieve existing reference IDs to sequence new ones reliably */
+    @Query("SELECT c.referenceId FROM Complaint c WHERE c.referenceId LIKE 'CMP-%'")
+    List<String> findAllReferenceIds();
 }

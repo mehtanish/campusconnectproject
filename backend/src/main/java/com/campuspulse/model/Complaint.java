@@ -22,6 +22,17 @@ public class Complaint {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /** 8-character human-readable reference code in CMP-XXXX format (e.g. CMP-1048) */
+    @Column(name = "reference_id", length = 8, unique = true)
+    private String referenceId;
+
+    @PrePersist
+    public void ensureReferenceId() {
+        if (this.referenceId == null || this.referenceId.isBlank()) {
+            this.referenceId = "CMP-" + UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
+        }
+    }
+
     @Column(nullable = false)
     private String title;
 

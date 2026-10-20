@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ComplaintRepositoryTest {
 
     private static final List<ComplaintStatus> ACTIVE_STATUSES = List.of(
-            ComplaintStatus.PENDING, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
+            ComplaintStatus.PENDING, ComplaintStatus.ACCEPTED, ComplaintStatus.APPROVED, ComplaintStatus.IN_PROGRESS);
 
     @Autowired
     private ComplaintRepository complaintRepository;
