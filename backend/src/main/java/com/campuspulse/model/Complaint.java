@@ -27,6 +27,7 @@ public class Complaint {
     private String referenceId;
 
     @PrePersist
+    @PreUpdate
     public void ensureReferenceId() {
         if (this.referenceId == null || this.referenceId.isBlank()) {
             this.referenceId = "CMP-" + UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();

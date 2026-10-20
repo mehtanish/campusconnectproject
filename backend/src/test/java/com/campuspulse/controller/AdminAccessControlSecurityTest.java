@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -144,5 +145,38 @@ public class AdminAccessControlSecurityTest {
         mockMvc.perform(get("/api/admin/stats")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminAcceptComplaintPersistsAndIsIdempotent() throws Exception {
+        Complaint complaint = complaintRepository.findAll().stream()
+                .findFirst().orElse(null);
+        assertThat(complaint).isNotNull();
+
+        StatusUpdateRequest update = new StatusUpdateRequest();
+        update.setStatus(ComplaintStatus.ACCEPTED);
+
+        // First Accept call
+        MvcResult r1 = mockMvc.perform(
+                patch("/api/admin/complaints/" + complaint.getId() + "/status")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Second duplicate / concurrent Accept call (idempotent, must return 200, no false conflict)
+        MvcResult r2 = mockMvc.perform(
+                patch("/api/admin/complaints/" + complaint.getId() + "/status")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Verify status persisted in database
+        Complaint persisted = complaintRepository.findById(complaint.getId()).orElse(null);
+        assertThat(persisted).isNotNull();
+        assertThat(persisted.getStatus()).isEqualTo(ComplaintStatus.ACCEPTED);
     }
 }

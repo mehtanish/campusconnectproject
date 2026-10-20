@@ -1,5 +1,6 @@
 package com.campuspulse.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -63,11 +65,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataConflict(DataIntegrityViolationException ex) {
+        log.error("DataIntegrityViolationException intercepted: ", ex);
+        String cause = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("success", false);
-        body.put("message", "This request conflicts with an existing record.");
-        body.put("error", "This request conflicts with an existing record.");
+
+        boolean isUniqueViolation = cause != null && (cause.toLowerCase().contains("unique") || cause.toLowerCase().contains("duplicate") || cause.contains("23505"));
+        String userMessage = isUniqueViolation
+                ? "This request conflicts with an existing record in the database."
+                : (cause != null && !cause.isBlank() ? cause : "Data integrity error occurred.");
+        body.put("message", userMessage);
+        body.put("error", userMessage);
         body.put("status", HttpStatus.CONFLICT.value());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }

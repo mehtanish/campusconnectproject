@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame,
@@ -87,11 +87,18 @@ export function ComplaintPriorityQueue({
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  const updatingIdsRef = useRef<Set<string>>(new Set());
+
   // Status Change Handler
   const handleStatusChange = async (
     complaintId: string,
     newStatus: ComplaintStatus
   ) => {
+    if (updatingIdsRef.current.has(complaintId)) {
+      return;
+    }
+    updatingIdsRef.current.add(complaintId);
+
     try {
       setUpdatingId(complaintId);
       await api.patch(`/api/admin/complaints/${complaintId}/status`, {
@@ -102,12 +109,14 @@ export function ComplaintPriorityQueue({
       toast.success(`Complaint moved to ${readableStatus}`);
       onRefresh?.();
     } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string; message?: string } } };
       const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : 'Failed to update status';
-      toast.error(message || 'Failed to update status');
+        errorObj?.response?.data?.message ||
+        errorObj?.response?.data?.error ||
+        'Failed to update status';
+      toast.error(message);
     } finally {
+      updatingIdsRef.current.delete(complaintId);
       setUpdatingId(null);
     }
   };

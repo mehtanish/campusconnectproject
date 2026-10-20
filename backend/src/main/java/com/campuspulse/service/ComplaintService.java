@@ -149,16 +149,27 @@ public class ComplaintService {
         if (admin == null || admin.getRole() == Role.STUDENT) {
             throw new AccessDeniedException("Access denied: Only administrators can update complaint status.");
         }
-        Complaint complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        Complaint complaint = complaintRepository.findByIdForUpdate(complaintId)
+                .orElseGet(() -> complaintRepository.findById(complaintId)
+                        .orElseThrow(() -> new RuntimeException("Complaint not found with id: " + complaintId)));
 
         if (!isAuthorizedAdminForCategory(complaint.getCategory(), admin.getRole())) {
             throw new AccessDeniedException("Access denied: You are not authorized to update complaints outside your domain.");
         }
 
+        // Idempotency guard: if complaint is already in the requested status, succeed cleanly without duplicate update
+        if (complaint.getStatus() == request.getStatus() &&
+            (request.getAdminNote() == null || request.getAdminNote().equals(complaint.getAdminNote()))) {
+            return toResponse(complaint, admin.getId());
+        }
+
         complaint.setStatus(request.getStatus());
         if (request.getAdminNote() != null && !request.getAdminNote().isBlank()) {
             complaint.setAdminNote(request.getAdminNote());
+        }
+
+        if (complaint.getReferenceId() == null || complaint.getReferenceId().isBlank()) {
+            complaint.setReferenceId(generateNextReferenceId());
         }
 
         complaint = complaintRepository.save(complaint);

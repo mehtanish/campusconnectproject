@@ -45,9 +45,11 @@ export default function AdminAnalyticsHub() {
   // Tab Navigation state
   const [activeTab, setActiveTab] = useState<'ANALYTICS' | 'NOTICE_BOARD'>('ANALYTICS');
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) {
+        setIsLoading(true);
+      }
       const [compRes, statsRes] = await Promise.all([
         api.get<ComplaintResponse[]>('/api/admin/complaints').catch((err) => {
           console.error('Failed to fetch admin complaints:', err);
@@ -64,7 +66,9 @@ export default function AdminAnalyticsHub() {
     } catch (err) {
       console.error('Failed to fetch admin data:', err);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -369,7 +373,7 @@ export default function AdminAnalyticsHub() {
                 Complaint Management Workflow
               </h2>
 
-              {isLoading ? (
+              {isLoading && complaints.length === 0 ? (
                 <div className="space-y-4">
                   <Skeleton className="h-32 w-full" />
                   <Skeleton className="h-32 w-full" />
@@ -377,7 +381,7 @@ export default function AdminAnalyticsHub() {
               ) : (
                 <ComplaintPriorityQueue
                   complaints={complaints}
-                  onRefresh={() => fetchAdminData()}
+                  onRefresh={() => fetchAdminData(true)}
                 />
               )}
             </div>
