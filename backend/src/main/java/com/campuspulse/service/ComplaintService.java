@@ -45,10 +45,22 @@ public class ComplaintService {
             .orElseThrow(() -> new IllegalArgumentException(
                 "Unknown issueTag: '" + request.getIssueTag() + "'"));
 
-        List<Complaint> duplicates = complaintRepository.findDuplicates(
+        List<Complaint> potentialDuplicates = complaintRepository.findDuplicates(
                 request.getLocationPath(), request.getIssueTag(), ACTIVE_STATUSES);
-        if (!duplicates.isEmpty()) {
-            throw new DuplicateComplaintException(toResponse(duplicates.get(0), student.getId()));
+
+        String candidateTitle = request.getTitle() != null ? request.getTitle().trim().toLowerCase() : "";
+        Complaint exactDuplicate = potentialDuplicates.stream()
+                .filter(c -> {
+                    String existingTitle = c.getTitle() != null ? c.getTitle().trim().toLowerCase() : "";
+                    boolean sameTitle = !candidateTitle.isEmpty() && existingTitle.equalsIgnoreCase(candidateTitle);
+                    boolean sameStudent = c.getStudent() != null && c.getStudent().getId().equals(student.getId());
+                    return sameTitle || (sameStudent && sameTitle);
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (exactDuplicate != null) {
+            throw new DuplicateComplaintException(toResponse(exactDuplicate, student.getId()));
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -123,6 +135,9 @@ public class ComplaintService {
 
     @Transactional(readOnly = true)
     public List<ComplaintResponse> getComplaintsByAdminRole(Role adminRole, UUID currentUserId) {
+        if (adminRole == null || adminRole == Role.STUDENT) {
+            throw new AccessDeniedException("Access denied: Administrator privileges required.");
+        }
         return complaintRepository.findByAdminRoleOrderByPriorityDesc(adminRole)
                 .stream()
                 .map(c -> toResponse(c, currentUserId))
@@ -131,8 +146,15 @@ public class ComplaintService {
 
     @Transactional
     public ComplaintResponse updateStatus(UUID complaintId, StatusUpdateRequest request, User admin) {
+        if (admin == null || admin.getRole() == Role.STUDENT) {
+            throw new AccessDeniedException("Access denied: Only administrators can update complaint status.");
+        }
         Complaint complaint = complaintRepository.findById(complaintId)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
+
+        if (!isAuthorizedAdminForCategory(complaint.getCategory(), admin.getRole())) {
+            throw new AccessDeniedException("Access denied: You are not authorized to update complaints outside your domain.");
+        }
 
         complaint.setStatus(request.getStatus());
         if (request.getAdminNote() != null && !request.getAdminNote().isBlank()) {
@@ -288,15 +310,18 @@ public class ComplaintService {
             }
         }
         int nextNum = maxNum + 1;
-        if (nextNum <= 9999) {
-            return String.format("CMP-%04d", nextNum);
-        } else {
-            String suffix;
-            do {
-                suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
-            } while (complaintRepository.existsByReferenceIdIgnoreCase("CMP-" + suffix));
-            return "CMP-" + suffix;
+        while (nextNum <= 9999) {
+            String candidate = String.format("CMP-%04d", nextNum);
+            if (!complaintRepository.existsByReferenceIdIgnoreCase(candidate)) {
+                return candidate;
+            }
+            nextNum++;
         }
+        String suffix;
+        do {
+            suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
+        } while (complaintRepository.existsByReferenceIdIgnoreCase("CMP-" + suffix));
+        return "CMP-" + suffix;
     }
 
     @Transactional(readOnly = true)

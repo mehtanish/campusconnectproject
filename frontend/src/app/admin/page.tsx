@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { ComplaintPriorityQueue } from '@/components/complaints/ComplaintPriorityQueue';
 import {
@@ -11,6 +12,9 @@ import {
   BarChart2,
   Radio,
   RotateCw,
+  ShieldAlert,
+  ArrowLeft,
+  Lock,
 } from 'lucide-react';
 import { NoticeBoardManagement } from '@/components/admin/NoticeBoardManagement';
 import {
@@ -32,7 +36,8 @@ import { GlowCard } from '@/components/ui/GlowCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function AdminAnalyticsHub() {
-  const { user } = useAuth();
+  const { user, isAdmin, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
   const [complaints, setComplaints] = useState<ComplaintResponse[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,11 +69,20 @@ export default function AdminAnalyticsHub() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let isMounted = true;
+    Promise.resolve().then(() => {
+      if (!isMounted) return;
+      if (isAuthLoading) return;
+      if (!isAdmin) {
+        setIsLoading(false);
+        return;
+      }
       fetchAdminData();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin, isAuthLoading]);
 
   const downloadReport = async (endpoint: string, filename: string) => {
     try {
@@ -103,6 +117,75 @@ export default function AdminAnalyticsHub() {
     { name: 'Sat', complaints: 14, resolved: 13 },
     { name: 'Sun', complaints: 18, resolved: 17 },
   ];
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg">
+        <Navbar />
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+          <Skeleton className="h-16 w-1/3" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+          </div>
+          <Skeleton className="h-72 w-full" />
+        </main>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <GlowCard glowColor="rgba(244, 63, 94, 0.25)" className="w-full max-w-lg p-8 text-center space-y-6 shadow-2xl border-rose-500/40 bg-slate-950/95">
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-xl shadow-rose-500/20">
+              <ShieldAlert className="w-9 h-9" aria-hidden="true" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-full uppercase tracking-wider">
+                403 - FORBIDDEN ACCESS
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
+                Administrative Rights Required
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans pt-1">
+                This portal is strictly restricted to designated PICT campus facility administrators and staff members.
+              </p>
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono text-slate-400">
+                Current account role: <span className="text-rose-400 font-bold">{user?.role || 'UNAUTHENTICATED'}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => router.push(user ? '/dashboard' : '/login')}
+                className="w-full sm:w-auto gap-2 min-h-[44px]"
+              >
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                <span>{user ? 'Return to Student Dashboard' : 'Go to Student Login'}</span>
+              </Button>
+              <Button
+                variant="cyber"
+                size="md"
+                onClick={() => router.push('/admin/login')}
+                className="w-full sm:w-auto gap-2 min-h-[44px]"
+              >
+                <Lock className="w-4 h-4 text-cyan-200" aria-hidden="true" />
+                <span>Staff Portal Sign In</span>
+              </Button>
+            </div>
+          </GlowCard>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 cyber-grid-bg">

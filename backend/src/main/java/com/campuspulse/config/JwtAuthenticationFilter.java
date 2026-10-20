@@ -42,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             User user = userRepository.findById(userId).orElse(null);
 
             if (user != null) {
-                var authority = new SimpleGrantedAuthority("ROLE_" + role);
+                var authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
                 var authentication = new UsernamePasswordAuthenticationToken(
                         user, null, Collections.singletonList(authority));
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

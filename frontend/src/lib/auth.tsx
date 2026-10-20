@@ -9,7 +9,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (data: LoginRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<User>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
@@ -60,9 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('campuspulse_user', JSON.stringify(userData));
   }, []);
 
-  const login = useCallback(async (data: LoginRequest) => {
+  const login = useCallback(async (data: LoginRequest): Promise<User> => {
     const response = await api.post<AuthResponse>('/api/auth/login', data);
     persistAuth(response.data);
+    return {
+      userId: response.data.userId,
+      name: response.data.name,
+      email: response.data.email,
+      rollNo: response.data.rollNo,
+      role: response.data.role,
+    };
   }, [persistAuth]);
 
   const register = useCallback(async (data: RegisterRequest) => {

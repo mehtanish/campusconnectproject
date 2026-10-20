@@ -249,4 +249,64 @@ class ComplaintServiceTest {
                 () -> complaintService.trackComplaint("CMP-0000")
         );
     }
+
+    @Test
+    void studentCannotUpdateComplaintStatus() {
+        Complaint complaint = createTestComplaint(student1, ComplaintStatus.PENDING);
+        StatusUpdateRequest update = new StatusUpdateRequest();
+        update.setStatus(ComplaintStatus.IN_PROGRESS);
+        update.setAdminNote("Attempted student update");
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> complaintService.updateStatus(complaint.getId(), update, student1)
+        );
+    }
+
+    @Test
+    void studentCannotGetComplaintsByAdminRole() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> complaintService.getComplaintsByAdminRole(student1.getRole(), student1.getId())
+        );
+    }
+
+    @Test
+    void duplicateComplaintDetectionAllowsDifferentTitlesAtSameLocation() {
+        ComplaintRequest req1 = new ComplaintRequest();
+        req1.setTitle("Projector dead in Lab 201");
+        req1.setDescription("Lamp is blown and needs immediate replacement");
+        req1.setCategoryId(wifiCategory.getId());
+        req1.setLocationPath("Academic > A3 Building > Floor 2");
+        req1.setIssueTag("test-wifi-issue");
+
+        ComplaintResponse res1 = complaintService.createComplaint(req1, student1);
+        assertThat(res1.getId()).isNotNull();
+
+        // Second complaint at same location + same issueTag, but different title/room
+        ComplaintRequest req2 = new ComplaintRequest();
+        req2.setTitle("HDMI cable missing in Lab 205");
+        req2.setDescription("Cable was removed and cannot connect laptop");
+        req2.setCategoryId(wifiCategory.getId());
+        req2.setLocationPath("Academic > A3 Building > Floor 2");
+        req2.setIssueTag("test-wifi-issue");
+
+        // Should submit cleanly with no conflict error
+        ComplaintResponse res2 = complaintService.createComplaint(req2, student2);
+        assertThat(res2.getId()).isNotNull();
+        assertThat(res2.getId()).isNotEqualTo(res1.getId());
+
+        // Exact duplicate title & location by student1 should be blocked
+        ComplaintRequest reqDuplicate = new ComplaintRequest();
+        reqDuplicate.setTitle("Projector dead in Lab 201");
+        reqDuplicate.setDescription("Lamp is blown and needs immediate replacement");
+        reqDuplicate.setCategoryId(wifiCategory.getId());
+        reqDuplicate.setLocationPath("Academic > A3 Building > Floor 2");
+        reqDuplicate.setIssueTag("test-wifi-issue");
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                com.campuspulse.exception.DuplicateComplaintException.class,
+                () -> complaintService.createComplaint(reqDuplicate, student1)
+        );
+    }
 }

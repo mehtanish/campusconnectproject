@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/admin/reports")
+@PreAuthorize("hasAnyRole('ADMIN_WIFI', 'ADMIN_MAINTENANCE', 'ADMIN_MESS', 'ADMIN_ACADEMIC', 'SUPER_ADMIN')")
 @RequiredArgsConstructor
 public class ReportController {
 

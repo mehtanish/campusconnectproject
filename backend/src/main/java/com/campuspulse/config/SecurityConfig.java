@@ -44,9 +44,27 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasAnyRole(
                     "ADMIN_WIFI", "ADMIN_MAINTENANCE", "ADMIN_MESS",
                     "ADMIN_ACADEMIC", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/complaints/*/status").hasAnyRole(
+                    "ADMIN_WIFI", "ADMIN_MAINTENANCE", "ADMIN_MESS",
+                    "ADMIN_ACADEMIC", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/complaints").hasAnyRole(
+                    "ADMIN_WIFI", "ADMIN_MAINTENANCE", "ADMIN_MESS",
+                    "ADMIN_ACADEMIC", "SUPER_ADMIN")
 
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("{\"status\":403,\"error\":\"Forbidden\",\"message\":\"Access denied: Administrator privileges required\"}");
+                })
             )
             // H2 console needs frames
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))

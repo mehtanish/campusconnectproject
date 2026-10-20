@@ -11,6 +11,8 @@ import com.campuspulse.service.ComplaintService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasAnyRole('ADMIN_WIFI', 'ADMIN_MAINTENANCE', 'ADMIN_MESS', 'ADMIN_ACADEMIC', 'SUPER_ADMIN')")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -27,10 +30,17 @@ public class AdminController {
     private final ComplaintRepository complaintRepository;
     private final com.campuspulse.service.CommentService commentService;
 
+    private void assertAdmin(User admin) {
+        if (admin == null || admin.getRole() == Role.STUDENT) {
+            throw new AccessDeniedException("Access denied: Administrator privileges required.");
+        }
+    }
+
     /** Get complaints filtered by admin's domain role */
     @GetMapping("/complaints")
     public ResponseEntity<List<ComplaintResponse>> getAdminComplaints(
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         if (admin.getRole() == Role.SUPER_ADMIN) {
             return ResponseEntity.ok(complaintService.getAllComplaints(admin.getId()));
         }
@@ -42,6 +52,7 @@ public class AdminController {
     public ResponseEntity<AdminComplaintDetailResponse> getAdminComplaintDetails(
             @PathVariable UUID id,
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         return ResponseEntity.ok(complaintService.getAdminComplaintDetails(id, admin.getRole()));
     }
 
@@ -50,6 +61,7 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> deleteComplaint(
             @PathVariable UUID id,
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         complaintService.deleteComplaint(id, admin);
         return ResponseEntity.ok(Map.of("message", "Complaint deleted successfully by admin"));
     }
@@ -60,6 +72,7 @@ public class AdminController {
             @PathVariable UUID id,
             @Valid @RequestBody com.campuspulse.dto.comment.CommentRequest request,
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         return ResponseEntity.ok(commentService.addComment(id, request, admin));
     }
 
@@ -69,6 +82,7 @@ public class AdminController {
             @PathVariable UUID id,
             @PathVariable UUID commentId,
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         commentService.deleteComment(commentId, admin);
         return ResponseEntity.ok(Map.of("message", "Comment deleted successfully"));
     }
@@ -79,12 +93,14 @@ public class AdminController {
             @PathVariable UUID id,
             @Valid @RequestBody StatusUpdateRequest request,
             @AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         return ResponseEntity.ok(complaintService.updateStatus(id, request, admin));
     }
 
     /** Dashboard analytics stats */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(@AuthenticationPrincipal User admin) {
+        assertAdmin(admin);
         long totalComplaints;
         long pendingComplaints;
         long resolvedComplaints;

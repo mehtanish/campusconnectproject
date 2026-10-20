@@ -46,9 +46,14 @@ export default function LoginPage() {
     try {
       setIsSubmitting(true);
       setErrors({});
-      await login({ email: email.trim(), password });
-      toast.success('Logged in successfully!');
-      router.push('/dashboard');
+      const loggedUser = await login({ email: email.trim(), password });
+      if (loggedUser.role !== 'STUDENT') {
+        toast.success('Admin authenticated successfully!');
+        router.push('/admin');
+      } else {
+        toast.success('Logged in successfully!');
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { error?: string } } };
       const message = errorObj.response?.data?.error || 'Authentication failed. Please verify your credentials.';
@@ -140,27 +145,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Quick Demo Login Helper */}
-          <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
-            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-              Student Quick Demo
-            </span>
-            <div className="flex justify-center text-[11px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('arjun@pict.edu');
-                  setPassword('password123');
-                  setErrors({});
-                }}
-                className="px-3.5 py-2 min-h-[44px] bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono font-semibold transition-all cursor-pointer flex items-center justify-center"
-              >
-                Auto-fill Demo Student (Arjun)
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-between text-xs pt-4 border-t border-slate-800">
             <span className="text-slate-400">
               Don&apos;t have an account?{' '}
               <Link href="/register" className="font-bold text-cyan-400 hover:underline">

@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const router = useRouter();
 
   const validate = () => {
@@ -46,7 +46,14 @@ export default function AdminLoginPage() {
     try {
       setIsSubmitting(true);
       setErrors({});
-      await login({ email: email.trim(), password });
+      const loggedUser = await login({ email: email.trim(), password });
+      if (loggedUser.role === 'STUDENT') {
+        logout();
+        const accessDeniedMsg = 'Access Denied: Student accounts cannot access the administrative portal.';
+        setErrors({ general: accessDeniedMsg });
+        toast.error(accessDeniedMsg);
+        return;
+      }
       toast.success('Admin authenticated successfully!');
       router.push('/admin');
     } catch (err: unknown) {
@@ -140,28 +147,7 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          {/* Quick Staff Credentials Helper */}
-          <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
-            <div className="flex items-center justify-center gap-1 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
-              <AlertCircle className="w-3 h-3" aria-hidden="true" />
-              <span>Official Admin Credentials</span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin@campusconnect.edu');
-                  setPassword('YourAdminPassword123!');
-                  setErrors({});
-                }}
-                className="px-3.5 py-2 min-h-[44px] bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono cursor-pointer transition-colors flex items-center justify-center"
-              >
-                Production Admin (admin@campusconnect.edu)
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center text-xs text-slate-400 font-mono pt-2 border-t border-slate-800">
+          <div className="text-center text-xs text-slate-400 font-mono pt-4 border-t border-slate-800">
             Are you a student?{' '}
             <Link href="/login" className="font-bold text-cyan-400 hover:underline">
               Go to Student Login

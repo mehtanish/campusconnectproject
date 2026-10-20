@@ -34,8 +34,12 @@ public class ComplaintController {
     }
 
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN_WIFI', 'ADMIN_MAINTENANCE', 'ADMIN_MESS', 'ADMIN_ACADEMIC', 'SUPER_ADMIN')")
     public ResponseEntity<List<ComplaintResponse>> getAllComplaints(
             @AuthenticationPrincipal User user) {
+        if (user == null || user.getRole() == com.campuspulse.model.enums.Role.STUDENT) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Administrator privileges required.");
+        }
         return ResponseEntity.ok(complaintService.getAllComplaints(user.getId()));
     }
 
@@ -116,10 +120,14 @@ public class ComplaintController {
     }
 
     @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN_WIFI', 'ADMIN_MAINTENANCE', 'ADMIN_MESS', 'ADMIN_ACADEMIC', 'SUPER_ADMIN')")
     public ResponseEntity<ComplaintResponse> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody StatusUpdateRequest request,
             @AuthenticationPrincipal User user) {
+        if (user == null || user.getRole() == com.campuspulse.model.enums.Role.STUDENT) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Administrator privileges required.");
+        }
         return ResponseEntity.ok(complaintService.updateStatus(id, request, user));
     }
 }

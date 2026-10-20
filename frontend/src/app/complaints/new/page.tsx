@@ -158,6 +158,8 @@ export default function FileComplaintPage() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     if (!selectedCategory) {
       toast.error('Please select the exact campus location path.');
       return;
@@ -198,14 +200,14 @@ export default function FileComplaintPage() {
 
       toast.success('Complaint registered successfully! Official ticket generated.');
     } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { error?: string; existingComplaint?: ComplaintResponse } } };
+      const errorObj = err as { response?: { status?: number; data?: { error?: string; message?: string; existingComplaint?: ComplaintResponse } } };
       const existingComplaint = errorObj.response?.data?.existingComplaint;
       if (existingComplaint) {
         setDuplicateMatch(existingComplaint);
         setIsModalOpen(true);
         toast.warning('This issue was just reported. You can review or upvote the existing complaint.');
       } else {
-        const errMsg = errorObj.response?.data?.error || 'Failed to submit complaint';
+        const errMsg = errorObj.response?.data?.message || errorObj.response?.data?.error || 'Failed to submit complaint';
         toast.error(errMsg, { duration: 6000 });
       }
     } finally {
