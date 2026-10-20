@@ -33,11 +33,18 @@ import api from '@/lib/api';
 
 import { CampusNoticeBoard } from '@/components/ui/CampusNoticeBoard';
 
-const InteractiveBackground = dynamic(() => import('@/components/background/InteractiveBackground'), {
-  ssr: false,
-});
-
-
+const InteractiveBackground = dynamic(
+  () => import('@/components/background/InteractiveBackground'),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="fixed inset-0 z-0 pointer-events-none bg-slate-950"
+        aria-hidden="true"
+      />
+    ),
+  }
+);
 
 export default function Home() {
   const [stats, setStats] = React.useState({
@@ -56,8 +63,8 @@ export default function Home() {
           setStats(res.data);
         }
       })
-      .catch((err) => {
-        console.warn('Could not fetch live public stats:', err);
+      .catch(() => {
+        // Fallback to initial statistics when backend is starting or offline
       });
   }, []);
 
@@ -146,10 +153,15 @@ export default function Home() {
                 Next-generation infrastructure management & automated issue resolution platform for PICT students, faculty, and campus administrators.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <Link href="/complaints/new">
-                  <Button size="lg" className="cyber-button-glow font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 text-base rounded-xl w-full sm:w-auto active:scale-[0.98] transition-transform">
-                    Report an Issue <ArrowRight className="w-5 h-5 ml-2" />
+                  <Button size="lg" className="cyber-button-glow font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 text-base rounded-xl w-full sm:w-auto active:scale-[0.98] transition-transform min-h-[44px]">
+                    Report an Issue <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button variant="outline" size="lg" className="font-semibold text-slate-200 border-slate-700/80 hover:bg-slate-800/80 px-6 py-3.5 text-base rounded-xl w-full sm:w-auto min-h-[44px]">
+                    Student Portal
                   </Button>
                 </Link>
               </div>

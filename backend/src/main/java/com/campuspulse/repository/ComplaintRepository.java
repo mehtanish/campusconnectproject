@@ -4,6 +4,7 @@ import com.campuspulse.model.Complaint;
 import com.campuspulse.model.enums.ComplaintStatus;
 import com.campuspulse.model.enums.Role;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,7 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
     java.util.Optional<Complaint> findByIdForUpdate(@Param("id") UUID id);
 
     /** Student's own complaints */
+    @EntityGraph(attributePaths = {"category", "student"})
     List<Complaint> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
 
     /** All complaints for a given status */

@@ -15,21 +15,45 @@ import { CartoonPlaneBackground } from '@/components/background/CartoonPlaneBack
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login } = useAuth();
   const router = useRouter();
 
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email.trim()) {
+      newErrors.email = 'Staff email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Please enter a valid official staff email format.';
+    }
+
+    if (!password) {
+      newErrors.password = 'Administrator password is required.';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+
     try {
       setIsSubmitting(true);
-      await login({ email, password });
+      setErrors({});
+      await login({ email: email.trim(), password });
       toast.success('Admin authenticated successfully!');
       router.push('/admin');
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { error?: string } } };
-      toast.error(errorObj.response?.data?.error || 'Admin login failed');
+      const message = errorObj.response?.data?.error || 'Admin authentication failed. Check credentials.';
+      setErrors({ general: message });
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -44,42 +68,63 @@ export default function AdminLoginPage() {
         <GlowCard glowColor="rgba(139, 92, 246, 0.25)" className="w-full max-w-md p-8 space-y-6 shadow-2xl border-violet-500/30">
           <div className="text-center space-y-2">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-violet-500/30 border border-violet-300/30">
-              <Shield className="w-7 h-7 text-violet-200" />
+              <Shield className="w-7 h-7 text-violet-200" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl font-display font-extrabold text-white">
+            <h1 className="text-2xl font-display font-extrabold text-white">
               Admin & Staff Portal
-            </h2>
+            </h1>
             <p className="text-xs text-slate-400 font-mono">
               Official PICT Campus Authority Authentication
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-left">
+          {errors.general && (
+            <div role="alert" className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 font-mono">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
+              <span>{errors.general}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate className="space-y-4 text-left">
             <div className="space-y-1.5">
-              <label className="text-xs font-mono font-semibold text-slate-300">
+              <label htmlFor="staff-email" className="text-xs font-mono font-semibold text-slate-300">
                 Staff Email Address
               </label>
               <Input
+                id="staff-email"
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="super.admin@pict.edu"
-                icon={<Mail className="w-4 h-4 text-cyan-400" />}
+                error={errors.email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email || errors.general) {
+                    setErrors((prev) => ({ ...prev, email: undefined, general: undefined }));
+                  }
+                }}
+                placeholder="admin@campusconnect.edu"
+                icon={<Mail className="w-4 h-4 text-cyan-400" aria-hidden="true" />}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-mono font-semibold text-slate-300">
+              <label htmlFor="staff-password" className="text-xs font-mono font-semibold text-slate-300">
                 Admin Password
               </label>
               <Input
+                id="staff-password"
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password || errors.general) {
+                    setErrors((prev) => ({ ...prev, password: undefined, general: undefined }));
+                  }
+                }}
                 placeholder="••••••••"
-                icon={<Lock className="w-4 h-4 text-cyan-400" />}
+                icon={<Lock className="w-4 h-4 text-cyan-400" aria-hidden="true" />}
               />
             </div>
 
@@ -88,17 +133,17 @@ export default function AdminLoginPage() {
               variant="cyber"
               size="lg"
               isLoading={isSubmitting}
-              className="w-full gap-2 mt-2"
+              className="w-full gap-2 mt-2 min-h-[44px]"
             >
               <span>Sign In as Staff / Admin</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Button>
           </form>
 
           {/* Quick Staff Credentials Helper */}
           <div className="border-t border-slate-800 pt-4 space-y-2 text-center">
             <div className="flex items-center justify-center gap-1 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
-              <AlertCircle className="w-3 h-3" />
+              <AlertCircle className="w-3 h-3" aria-hidden="true" />
               <span>Official Admin Credentials</span>
             </div>
             <div className="flex flex-wrap justify-center gap-2 text-[11px]">
@@ -107,8 +152,9 @@ export default function AdminLoginPage() {
                 onClick={() => {
                   setEmail('admin@campusconnect.edu');
                   setPassword('YourAdminPassword123!');
+                  setErrors({});
                 }}
-                className="px-3 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono cursor-pointer transition-colors"
+                className="px-3.5 py-2 min-h-[44px] bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 border border-cyan-500/30 font-mono cursor-pointer transition-colors flex items-center justify-center"
               >
                 Production Admin (admin@campusconnect.edu)
               </button>

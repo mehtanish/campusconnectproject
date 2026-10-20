@@ -12,15 +12,17 @@ import {
   Send,
   Sparkles,
   Loader2,
-  AlertCircle,
   Check,
   ChevronRight,
   ChevronLeft,
-  QrCode,
   CheckCircle2,
   Building2,
   MapPin,
-  Flame,
+  Copy,
+  RotateCcw,
+  Home,
+  LayoutDashboard,
+  AlertCircle,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -38,7 +40,7 @@ import { Badge } from '@/components/ui/Badge';
 
 export default function FileComplaintPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isAdmin, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: isAuthLoading } = useAuth();
 
   // Wizard Step State (1: Location/Category, 2: Details, 3: Review, 4: Success Ticket)
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -52,25 +54,25 @@ export default function FileComplaintPage() {
   const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [isLoadingIssueTypes, setIsLoadingIssueTypes] = useState<boolean>(true);
 
-  const [isCheckingDedup, setIsCheckingDedup] = useState<boolean>(false);
   const [duplicateMatch, setDuplicateMatch] = useState<ComplaintResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Field validation and confirmation states
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; description?: string; location?: string }>({});
+  const [hasCopied, setHasCopied] = useState<boolean>(false);
+
   // Submitted ticket result state
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintResponse | null>(null);
 
-  // Guard against unauthenticated visitors and admins
+  // Guard against admins filing complaints
   useEffect(() => {
     if (isAuthLoading) return;
-    if (!isAuthenticated) {
-      toast.error('Please log in to your student account to file a complaint.');
-      router.push('/login');
-    } else if (isAdmin) {
+    if (isAdmin) {
       toast.info('Admins cannot file complaints. Redirecting to Admin Hub.');
       router.push('/admin');
     }
-  }, [isAuthenticated, isAdmin, isAuthLoading, router]);
+  }, [isAdmin, isAuthLoading, router]);
 
   // Fetch issue types on mount
   useEffect(() => {
@@ -92,12 +94,10 @@ export default function FileComplaintPage() {
     fetchIssueTypes();
   }, []);
 
-  // Deduplication trigger
   const triggerDedupCheck = async (locPath: string) => {
     if (!locPath) return;
 
     try {
-      setIsCheckingDedup(true);
       const res = await api.post<DuplicateCheckResponse>('/api/complaints/check-duplicate', {
         locationPath: locPath,
       });
@@ -105,27 +105,55 @@ export default function FileComplaintPage() {
       if (res.data.isDuplicate && res.data.existingComplaint) {
         setDuplicateMatch(res.data.existingComplaint);
         setIsModalOpen(true);
-        toast.warning(
-          'Active complaint already registered at this location! Please upvote the existing complaint.',
-          { duration: 6000 }
-        );
       } else {
         setDuplicateMatch(null);
-        setIsModalOpen(false);
       }
     } catch (err) {
-      console.error('Failed dedup check:', err);
-    } finally {
-      setIsCheckingDedup(false);
+      console.error('Dedup check failed:', err);
     }
   };
 
-  const handleCategorySelect = (category: Category, path: string) => {
+  const validateStep2 = () => {
+    const errors: { title?: string; description?: string } = {};
+    if (!title.trim()) {
+      errors.title = 'Please enter a descriptive complaint title.';
+    } else if (title.trim().length < 5) {
+      errors.title = 'Title must be at least 5 characters long (e.g. Broken Projector in Lab 204).';
+    }
+
+    if (!description.trim()) {
+      errors.description = 'Please provide detailed context regarding the issue.';
+    } else if (description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters long to provide sufficient context.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCopyTracking = () => {
+    if (!createdComplaint) return;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://campusconnectproject-nu.vercel.app';
+    const trackingUrl = `${baseUrl}/complaints/${createdComplaint.id}`;
+    const copyText = `CampusConnect PICT Complaint #${createdComplaint.id}: ${createdComplaint.title}\nStatus: ${createdComplaint.status}\nTracking: ${trackingUrl}`;
+    navigator.clipboard.writeText(copyText);
+    setHasCopied(true);
+    toast.success('Tracking reference and details copied to clipboard!');
+    setTimeout(() => setHasCopied(false), 2500);
+  };
+
+  const handleResetForAnother = () => {
+    setCurrentStep(1);
+    setSelectedCategory(null);
+    setLocationPath('');
+    setTitle('');
+    setDescription('');
+    setCreatedComplaint(null);
     setDuplicateMatch(null);
-    setIsModalOpen(false);
-    setIsCheckingDedup(false);
-    setSelectedCategory(category);
-    setLocationPath(path);
+    setFieldErrors({});
+    if (issueTypes.length > 0) {
+      setIssueTag(issueTypes[0].stableKey);
+    }
   };
 
   const handleSubmit = async () => {
@@ -146,24 +174,28 @@ export default function FileComplaintPage() {
     try {
       setIsSubmitting(true);
       const res = await api.post<ComplaintResponse>('/api/complaints', {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         categoryId: selectedCategory.id,
         locationPath,
         issueTag,
       });
 
       setCreatedComplaint(res.data);
-      setCurrentStep(4); // Advance to ticket success screen
+      setCurrentStep(4); // Advance to ticket confirmation screen
 
-      // Trigger Confetti effect
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#06b6d4', '#6366f1', '#10b981'],
+        });
+      } catch {
+        // Fallback if canvas is unavailable
+      }
 
-      toast.success('Complaint registered successfully! Ticket generated.');
+      toast.success('Complaint registered successfully! Official ticket generated.');
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { error?: string; existingComplaint?: ComplaintResponse } } };
       const existingComplaint = errorObj.response?.data?.existingComplaint;
@@ -186,7 +218,7 @@ export default function FileComplaintPage() {
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-6 text-center">
           <Card className="p-8 space-y-4 max-w-sm">
-            <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mx-auto" aria-hidden="true" />
             <p className="text-xs text-slate-400 font-mono">Verifying authorization...</p>
           </Card>
         </div>
@@ -223,14 +255,14 @@ export default function FileComplaintPage() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
         <div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
             <span>PARAMETERIZED DEDUPLICATION ENGINE</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-display font-extrabold text-white">
             File a <span className="gradient-text-cyber">Campus Issue Complaint</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Follow the 3-step wizard to register your complaint.
+            Follow the 3-step wizard to register your complaint with automated priority triage.
           </p>
         </div>
 
@@ -249,7 +281,7 @@ export default function FileComplaintPage() {
                         : 'bg-slate-900 text-slate-500 border border-slate-800'
                     }`}
                   >
-                    {currentStep > s.number ? <Check className="w-4 h-4 text-emerald-400" /> : s.number}
+                    {currentStep > s.number ? <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" /> : s.number}
                   </div>
                   <span
                     className={`hidden sm:inline text-xs font-semibold ${
@@ -297,29 +329,47 @@ export default function FileComplaintPage() {
               <Card className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <h2 className="text-sm font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-cyan-400" />
-                    Step 1: Select Campus Location Path
+                    <Building2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                    Step 1: Select Infrastructure Location
                   </h2>
-                  {isCheckingDedup && (
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-400">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Checking deduplication...
-                    </div>
-                  )}
                 </div>
 
-                <CascadingCategorySelector onSelectCategory={handleCategorySelect} />
+                <p className="text-xs text-slate-400">
+                  Select the exact campus hierarchy where this issue exists to run deduplication.
+                </p>
+
+                <CascadingCategorySelector
+                  onSelectCategory={(cat: Category, path: string) => {
+                    setSelectedCategory(cat);
+                    setLocationPath(path);
+                    triggerDedupCheck(path);
+                    setFieldErrors((prev) => ({ ...prev, location: undefined }));
+                  }}
+                />
+
+                {fieldErrors.location && (
+                  <p role="alert" className="text-xs text-rose-400 font-mono flex items-center gap-1.5 pt-1">
+                    <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>{fieldErrors.location}</span>
+                  </p>
+                )}
               </Card>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end">
                 <Button
                   variant="cyber"
                   disabled={!selectedCategory || !!duplicateMatch}
-                  onClick={() => setCurrentStep(2)}
-                  className="gap-2"
+                  onClick={() => {
+                    if (!selectedCategory) {
+                      setFieldErrors((prev) => ({ ...prev, location: 'Please complete the location selection.' }));
+                      return;
+                    }
+                    setCurrentStep(2);
+                  }}
+                  className="gap-2 min-h-[44px]"
                 >
                   <span>Continue to Issue Details</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </Button>
               </div>
             </motion.div>
@@ -336,21 +386,22 @@ export default function FileComplaintPage() {
             >
               <Card className="space-y-5">
                 <h2 className="text-sm font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800/80 pb-3">
-                  <Tag className="w-4 h-4 text-cyan-400" />
+                  <Tag className="w-4 h-4 text-cyan-400" aria-hidden="true" />
                   Step 2: Define Issue & Details
                 </h2>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-mono font-semibold text-slate-300">
+                  <label htmlFor="issue-tag-select" className="text-xs font-mono font-semibold text-slate-300">
                     Category Issue Type
                   </label>
                   {isLoadingIssueTypes ? (
                     <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                      Loading controlled vocabulary...
+                      <Loader2 className="w-4 h-4 animate-spin text-cyan-400" aria-hidden="true" />
+                      <span>Loading controlled vocabulary...</span>
                     </div>
                   ) : (
                     <Select
+                      id="issue-tag-select"
                       value={issueTag}
                       onChange={(e) => setIssueTag(e.target.value)}
                       required
@@ -369,46 +420,74 @@ export default function FileComplaintPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-mono font-semibold text-slate-300">
+                  <label htmlFor="complaint-title" className="text-xs font-mono font-semibold text-slate-300">
                     Complaint Title / Headline
                   </label>
                   <Input
+                    id="complaint-title"
                     required
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    error={fieldErrors.title}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (fieldErrors.title) {
+                        setFieldErrors((prev) => ({ ...prev, title: undefined }));
+                      }
+                    }}
                     placeholder="e.g. WiFi Access Point down on Floor 2 of A2 Building"
-                    icon={<FileText className="w-4 h-4" />}
+                    icon={<FileText className="w-4 h-4" aria-hidden="true" />}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-mono font-semibold text-slate-300">
+                  <label htmlFor="complaint-desc" className="text-xs font-mono font-semibold text-slate-300">
                     Detailed Description
                   </label>
                   <textarea
+                    id="complaint-desc"
                     rows={4}
                     required
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    aria-invalid={!!fieldErrors.description}
+                    aria-describedby={fieldErrors.description ? 'desc-error' : undefined}
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      if (fieldErrors.description) {
+                        setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                      }
+                    }}
                     placeholder="Provide full context regarding the infrastructure issue..."
-                    className="w-full text-xs p-3.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-slate-100 placeholder:text-slate-500 backdrop-blur-md focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                    className={`w-full text-xs p-3.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder:text-slate-500 backdrop-blur-md focus:outline-none focus:ring-2 transition-colors ${
+                      fieldErrors.description
+                        ? 'border-rose-500/80 focus:border-rose-400 focus:ring-rose-500/20 text-white'
+                        : 'border-slate-700/80 focus:border-cyan-400 focus:ring-cyan-500/20'
+                    }`}
                   />
+                  {fieldErrors.description && (
+                    <p id="desc-error" role="alert" className="text-xs text-rose-400 font-mono flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span>{fieldErrors.description}</span>
+                    </p>
+                  )}
                 </div>
               </Card>
 
               <div className="flex justify-between gap-3">
-                <Button variant="secondary" onClick={() => setCurrentStep(1)} className="gap-2">
-                  <ChevronLeft className="w-4 h-4" />
+                <Button variant="secondary" onClick={() => setCurrentStep(1)} className="gap-2 min-h-[44px]">
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                   <span>Back to Location</span>
                 </Button>
                 <Button
                   variant="cyber"
-                  disabled={!title.trim() || !description.trim()}
-                  onClick={() => setCurrentStep(3)}
-                  className="gap-2"
+                  onClick={() => {
+                    if (validateStep2()) {
+                      setCurrentStep(3);
+                    }
+                  }}
+                  className="gap-2 min-h-[44px]"
                 >
                   <span>Review & Confirm</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </Button>
               </div>
             </motion.div>
@@ -425,7 +504,7 @@ export default function FileComplaintPage() {
             >
               <GlowCard className="space-y-5">
                 <h2 className="text-sm font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800/80 pb-3">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />
                   Step 3: Review Complaint Package
                 </h2>
 
@@ -433,7 +512,7 @@ export default function FileComplaintPage() {
                   <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                     <span className="text-[10px] font-mono text-slate-400 uppercase">Location Path</span>
                     <div className="text-xs font-semibold text-cyan-300 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" aria-hidden="true" />
                       <span>{locationPath}</span>
                     </div>
                   </div>
@@ -441,7 +520,7 @@ export default function FileComplaintPage() {
                   <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                     <span className="text-[10px] font-mono text-slate-400 uppercase">Issue Type</span>
                     <div className="text-xs font-semibold text-violet-300 flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                      <Tag className="w-3.5 h-3.5 text-violet-400 shrink-0" aria-hidden="true" />
                       <span>{issueTag}</span>
                     </div>
                   </div>
@@ -456,24 +535,24 @@ export default function FileComplaintPage() {
               </GlowCard>
 
               <div className="flex justify-between gap-3">
-                <Button variant="secondary" onClick={() => setCurrentStep(2)} className="gap-2">
-                  <ChevronLeft className="w-4 h-4" />
+                <Button variant="secondary" onClick={() => setCurrentStep(2)} className="gap-2 min-h-[44px]">
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                   <span>Edit Details</span>
                 </Button>
                 <Button
                   variant="cyber"
                   isLoading={isSubmitting}
                   onClick={handleSubmit}
-                  className="gap-2"
+                  className="gap-2 min-h-[44px]"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4" aria-hidden="true" />
                   <span>Submit Official Complaint</span>
                 </Button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 4: SUCCESS TICKET SCREEN */}
+          {/* STEP 4: SUCCESS TICKET CONFIRMATION SCREEN */}
           {currentStep === 4 && createdComplaint && (
             <motion.div
               key="step4"
@@ -483,15 +562,18 @@ export default function FileComplaintPage() {
             >
               <GlowCard className="p-8 space-y-6 text-center border-cyan-500/40 bg-slate-950/90 shadow-2xl">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-                  <CheckCircle2 className="w-8 h-8" />
+                  <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-display font-extrabold text-white">
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full uppercase">
+                    REGISTRATION CONFIRMED
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white mt-2">
                     Complaint Ticket Issued
                   </h2>
                   <p className="text-xs text-slate-400 mt-1 font-mono">
-                    Official record created in PICT resolution registry.
+                    Official ticket registered and queued for PICT campus facilities triage.
                   </p>
                 </div>
 
@@ -502,9 +584,10 @@ export default function FileComplaintPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-[10px] font-mono text-slate-400 uppercase">Complaint ID</span>
-                    <div className="font-mono text-base font-bold text-cyan-300">
-                      #{createdComplaint.id}
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">Complaint Reference</span>
+                    <div className="font-mono text-base font-bold text-cyan-300 flex items-center justify-between">
+                      <span>#{createdComplaint.id}</span>
+                      <span className="text-xs text-slate-400 font-sans font-normal">{locationPath}</span>
                     </div>
                   </div>
 
@@ -521,15 +604,66 @@ export default function FileComplaintPage() {
                       </div>
                     </div>
                     {/* QR Code */}
-                    <div className="p-2 bg-white rounded-xl shadow-lg">
-                      <QRCodeSVG value={`http://localhost:3000/complaints/${createdComplaint.id}`} size={64} />
+                    <div className="p-2 bg-white rounded-xl shadow-lg" title="Scan to verify complaint ticket">
+                      <QRCodeSVG
+                        value={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://campusconnectproject-nu.vercel.app'}/complaints/${createdComplaint.id}`}
+                        size={64}
+                        aria-label="Official complaint verification QR code"
+                        role="img"
+                      />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-center gap-3 pt-2">
-                  <Button variant="cyber" onClick={() => router.push('/dashboard')}>
-                    Go to Student Dashboard
+                {/* Primary Next Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={handleCopyTracking}
+                    className="gap-2 w-full sm:w-auto min-h-[44px]"
+                  >
+                    {hasCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                        <span>Reference Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                        <span>Copy Tracking Ref</span>
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="cyber"
+                    size="md"
+                    onClick={() => router.push('/dashboard')}
+                    className="gap-2 w-full sm:w-auto min-h-[44px]"
+                  >
+                    <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
+                    <span>View in Dashboard</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={handleResetForAnother}
+                    className="gap-2 w-full sm:w-auto min-h-[44px]"
+                  >
+                    <RotateCcw className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                    <span>Submit Another</span>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={() => router.push('/')}
+                    className="gap-2 w-full sm:w-auto min-h-[44px]"
+                  >
+                    <Home className="w-4 h-4" aria-hidden="true" />
+                    <span>Return Home</span>
                   </Button>
                 </div>
               </GlowCard>

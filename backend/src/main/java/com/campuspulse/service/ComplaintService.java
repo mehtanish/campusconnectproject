@@ -68,6 +68,7 @@ public class ComplaintService {
         return toResponse(complaint, student.getId());
     }
 
+    @Transactional(readOnly = true)
     public DuplicateCheckResponse checkDuplicate(DuplicateCheckRequest request, UUID currentUserId) {
         if (request.getLocationPath() == null || request.getLocationPath().isBlank()
                 || request.getIssueTag() == null || request.getIssueTag().isBlank()) {
@@ -90,6 +91,7 @@ public class ComplaintService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<ComplaintResponse> getMyComplaints(User student) {
         return complaintRepository.findByStudentIdOrderByCreatedAtDesc(student.getId())
                 .stream()
@@ -97,6 +99,7 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ComplaintResponse> getUpvotedComplaints(User student) {
         return upvoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId())
                 .stream()
@@ -105,6 +108,7 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ComplaintResponse> getAllComplaints(UUID currentUserId) {
         return complaintRepository.findAllByOrderByPriorityScoreDesc()
                 .stream()
@@ -112,6 +116,7 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ComplaintResponse> getComplaintsByAdminRole(Role adminRole, UUID currentUserId) {
         return complaintRepository.findByAdminRoleOrderByPriorityDesc(adminRole)
                 .stream()
@@ -133,6 +138,7 @@ public class ComplaintService {
         return toResponse(complaint, admin.getId());
     }
 
+    @Transactional(readOnly = true)
     public ComplaintResponse getComplaintById(UUID id, UUID currentUserId) {
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));

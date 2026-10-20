@@ -128,6 +128,16 @@ function HeroParticleDust() {
   );
 }
 
+export function HeroThreeSceneSkeleton() {
+  return (
+    <div className="relative w-full aspect-square max-w-[620px] min-w-[280px] mx-auto flex items-center justify-center pointer-events-none">
+      <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-cyan-500/20 bg-cyan-500/5 animate-pulse flex items-center justify-center">
+        <div className="w-36 h-36 rounded-full border border-violet-500/20 bg-violet-500/5" />
+      </div>
+    </div>
+  );
+}
+
 export default function HeroThreeScene() {
   return (
     <div className="relative w-full aspect-square max-w-[620px] min-w-[280px] mx-auto flex items-center justify-center pointer-events-none">
